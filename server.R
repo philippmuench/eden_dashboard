@@ -1435,12 +1435,10 @@ size = "l")
   # sample grouping status
   observeEvent(input$grouptype, {
     if (input$grouptype == "pooling"){
-      cat("event")
       status$grouppassed <- TRUE
     } else {
       if (status$num_groups > 1){
         status$grouppassed <- TRUE
-        
       } else {
         status$grouppassed <- FALSE
       }
@@ -1453,6 +1451,28 @@ size = "l")
       status$grouppassed <- TRUE
     } else {
       status$grouppassed <- FALSE
+    }
+  })
+  
+  # sample hmm status
+  observeEvent(input$radio, {
+    if (input$radio == 2){
+      status$hmmpassed <- TRUE
+    } else {
+      if (status$num_hmm > 0){
+        status$hmmpassed <- TRUE
+      } else {
+        status$hmmpassed <- FALSE
+      }
+    }
+  })
+  
+  observe({
+    num <- status$num_hmm
+    if (num>0){
+      status$hmmpassed <- TRUE
+    } else {
+      status$hmmpassed <- FALSE
     }
   })
   
