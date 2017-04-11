@@ -260,20 +260,7 @@ size = "l")
     )
     vals$Data = rbind(vals$Data, new_row)
   })
-  
-  
-  
-  
-  
-  observeEvent(input$radio == 2, {
-    cat("testtt!!!!!!")
-    status$hmmpassed <- TRUE
-  })
-  
-  
-  
-  
-  
+
   # get current Epoch time
   epochTime <- function() {
     return(as.integer(Sys.time()))
@@ -449,9 +436,15 @@ size = "l")
     if (status$filespassed && status$hmmpassed && status$grouppassed) {
       box(title =  uiOutput("box5status"), uiOutput("upload_ui_buttons"), status = "success", solidHeader=T, width = NULL)
     } else {
-      box(title =  uiOutput("box5status"), uiOutput("upload_ui_buttons"), status = "warning", solidHeader=T, width = NULL)
+      box(title =  uiOutput("box5status"), uiOutput("startError"), status = "warning", solidHeader=T, width = NULL)
     }
   })
+  
+  output$startError <- renderUI({
+    iconName <- "remove"
+    p("Please check files ", icon(iconName, lib = "glyphicon"))
+  })
+  
   
   output$box3status <- renderUI({
     if (status$hmmpassed) {
@@ -798,16 +791,6 @@ size = "l")
     # uiOutput("hmmui"))
   })
   
-  # Enable the Submit button when all checks are passed
-  observe({
-    print('observe called')
-    print(paste('filespassed:', status$filespassed))
-    print(paste('hmmpassed:', status$hmmpassed))
-    checkpassed <- all(status$filespassed
-                       & status$hmmpassed)
-    toggleState(id = "checkButton", condition = FALSE)
-  })
-  
   output$upload_ui_buttons <- renderUI({
     conditionalPanel(
       condition = "input.tsp=='start",
@@ -815,14 +798,14 @@ size = "l")
       actionButton('checkButton', label = "start analysis")#,
   #    shinyjs::hidden(
   #      span(id = "checkButton", "start analysis"),
-  #      div(id = "error",
-  #          div(
-  #            br(), tags$b("Error: "), span(id = "error_msg")
-  #          ))
-      )
+#       div(id = "error",
+#            div(
+#             br(), tags$b("Error: "), span(id = "error_msg")
+#            ))
+#      )
       
       #  actionButton('deletefiles', label = "reset files")
-  #  )
+    )
   })
   
   
@@ -1132,7 +1115,6 @@ size = "l")
   
   ### clean up routine
   cancel.onSessionEnded <- session$onSessionEnded(function() {
-    print("SessionEnded")
     unlink(faa.path, recursive = T, force = T)
     unlink(ffn.path, recursive = T, force = T)
     unlink(fasta.path, recursive = T, force = T)
@@ -1323,6 +1305,9 @@ size = "l")
   
   
   
+
+
+  
   ### new
   output$upload_response_ffn = renderText({
     input$deletefiles
@@ -1475,6 +1460,5 @@ size = "l")
       status$hmmpassed <- FALSE
     }
   })
-  
 
   })

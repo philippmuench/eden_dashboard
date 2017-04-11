@@ -84,9 +84,8 @@ dashboardPage(
     
   )),
   
-  
   ## Body content
-  dashboardBody(tabItems(
+  dashboardBody( useShinyjs(),tabItems(
     # First tab content
     tabItem(tabName = "dashboard",
             # infoBoxes with fill=FALSE
