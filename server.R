@@ -459,7 +459,16 @@ size = "l")
     cat(paste("status$num_ffn: ", status$num_ffn, " \n"))
   })
   
-
+  
+  output$fileinfo <- renderPrint({
+    cat(paste("faa.path: ",faa.path, " \n"))
+    cat(paste("ffn.path: ",ffn.path,  " \n"))
+    cat(paste("sample.path: ",sample.path,  " \n"))
+    cat(paste("folder.path: ",folder.path,  " \n"))
+    cat(paste("log.path: ",log.path,  " \n"))
+    cat(paste("lock.file: ",lock.file,  " \n"))
+  })
+  
   output$sessioninfo <- renderPrint({
     cat(paste("Session ID: ", Sys.getpid(), " \n"))
     cat(paste("Global Instance ID: ", instance_id, " \n"))
@@ -1088,8 +1097,8 @@ size = "l")
     
     system(
       paste(
-#        "/home/eden/start_check.sh",
-          "./start_check.sh",
+        "/home/eden/start_check.sh",
+#          "./start_check.sh",
         
         faa.path,
         ffn.path,

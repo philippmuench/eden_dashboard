@@ -1,8 +1,9 @@
-library(shinydashboard)
+# library(shinydashboard)
 library(shiny)
 library(shinyjs)
 library(tools)
 library(ggplot2)
+library(shinydashboard)
 library(data.table)
 library(DT)
 
@@ -28,6 +29,7 @@ if (file.exists("/home/eden/eden.sh")) {
   ffn.path <<- "ffn"
   fasta.path <<- "fasta"
   tar.path <<- "tar"
+  folder.path <<- NULL
   sample.path <<- "samples.txt"
   hmm.path <<- "model.hmm"
   log.path <<- "log.txt"
@@ -135,7 +137,9 @@ dashboardPage(
               box( title ="clientData values",
                    verbatimTextOutput("clientdataText"), width = NULL),
               box( title ="session information",
-                   verbatimTextOutput("statusinfo"), width = NULL)
+                   verbatimTextOutput("statusinfo"), width = NULL),
+              box( title ="file information",
+                   verbatimTextOutput("fileinfo"), width = NULL)
               )
               
               )
