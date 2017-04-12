@@ -10,19 +10,17 @@ options(shiny.sanitize.errors = FALSE)
 shinyServer(function(input, output, session) {
   instance_id <<- instance_id + 1
   this_instance <- instance_id
-  
-  
+
   vals = reactiveValues()
   vals$Data = data.table(
-    Brands = paste0("Brand", 1:10),
-    Forecasted_Growth = sample(1:20, 10),
-    Last_Year_Purchase = round(rnorm(10, 1000, 1000) ^ 2),
-    Contact = paste0("Brand", 1:10, "@email.com")
-  )
-  
-  ######## START TABLE
+    job = "example job",
+    gap_proportion = 80,
+    groups =2,
+    hmm_mode = 1
+ )
   
   output$TableBody <- renderUI({
+    if(exists("vals")){
     fluidPage(box(
       width = 12,
       column(
@@ -31,8 +29,7 @@ shinyServer(function(input, output, session) {
         HTML(
           '<div class="btn-group" role="group" aria-label="Basic example">'
         ),
-        actionButton(inputId = "Del_row_head", label = "Delete selected rows"),
-     
+       
         HTML('</div>')
       ),
       
@@ -59,16 +56,17 @@ tags$script(
 )
 
     ))
+    } else {
+      NULL
+    }
     })
   
   output$Main_table <- renderDataTable({
+   if(exists("vals")){
+     
+     
     DT = vals$Data
-    DT[["Select"]] <-
-      paste0(
-        '<input type="checkbox" name="row_selected" value="Row',
-        1:nrow(vals$Data),
-        '"><br>'
-      )
+   
     
     DT[["Actions"]] <-
       paste0(
@@ -79,26 +77,21 @@ tags$script(
         '>Delete</button>
         <button type="button" class="btn btn-secondary modify"id=modify_',
         1:nrow(vals$Data),
-        '>Modify</button>
+        '>Show results</button>
         </div>
         
         '
       )
-    datatable(DT,
-              escape = F)
-  })
-  
-  
-  
-  observeEvent(input$Del_row_head, {
-    row_to_del = as.numeric(gsub("Row", "", input$checked_rows))
-    
-    vals$Data = vals$Data[-row_to_del]
-  })
-  
-  
-  
 
+      datatable(DT,
+                escape = F)
+   } else {
+     NULL
+   }
+
+    
+  })
+  
   
   
   fake_sales_modal <- modalDialog(fluidPage(h3(
@@ -253,10 +246,10 @@ size = "l")
   
   observeEvent(input$Add_row_head, {
     new_row = data.frame(
-      Brands = "NewBrand",
-      Forecasted_Growth = sample(1:20, 1),
-      Last_Year_Purchase = round(rnorm(1, 1000, 1000) ^ 2),
-      Contact = "NewBrand@email.com"
+      job = "NewRun",
+      gap_proportion = sample(1:20, 1),
+      groups = status$num_groups,
+      hmm_mode = round(rnorm(1, 1000, 1000) ^ 2)
     )
     vals$Data = rbind(vals$Data, new_row)
   })
@@ -464,11 +457,9 @@ size = "l")
     cat(paste("status$num_fasta: ", status$num_fasta, " \n"))
     cat(paste("status$num_faa: ", status$num_faa, " \n"))
     cat(paste("status$num_ffn: ", status$num_ffn, " \n"))
-
   })
   
-  
-  
+
   output$sessioninfo <- renderPrint({
     cat(paste("Session ID: ", Sys.getpid(), " \n"))
     cat(paste("Global Instance ID: ", instance_id, " \n"))
@@ -476,7 +467,7 @@ size = "l")
   })
   
   output$box4status <- renderUI({
-    if (status$hmmpassed) {
+    if (TRUE) {
       iconName <- "ok"
     } else {
       iconName <- "remove"
@@ -525,7 +516,24 @@ size = "l")
                          )))
       } else {
         conditionalPanel(condition = "input.tsp=='tab1'",
-                         htmlOutput("warning2"))
+                      #   htmlOutput("warning2"), 
+                         
+                         
+                         showModal(modalDialog(
+                           title = "Warning",
+                           "You already have fasta files uploaded. If you want to use ORFs instead please click the 'reset button' first.",
+                           easyClose = TRUE,
+                           footer = NULL
+                         )),
+                      updateRadioButtons(session, "intype",
+                                         selected = "fasta"
+                      )
+                      
+                      
+        
+                         )
+        
+        
       }
       
     } else {
@@ -547,7 +555,18 @@ size = "l")
         )
       } else {
         conditionalPanel(condition = "input.tsp=='tab1'",
-                         htmlOutput("warning3"))
+                         #htmlOutput("warning3"),
+                         
+                         showModal(modalDialog(
+                           title = "Warning",
+                           "You already have ORF files uploaded. If you want to use fasta instead please click the 'reset button' first.",
+                           easyClose = TRUE,
+                           footer = NULL
+                         )),
+                         updateRadioButtons(session, "intype",
+                                            selected = "orf"
+                         )
+                         )
         
         
       }
@@ -748,8 +767,6 @@ size = "l")
     )
   })
   
-  
-  
   output$upload_hmm <- renderUI({
     if (input$radio == 1) {
   
@@ -766,8 +783,6 @@ size = "l")
       )
     } 
   })
-  
-  
   
   output$upload_ui_hmm <- renderUI({
     conditionalPanel(
@@ -1073,7 +1088,9 @@ size = "l")
     
     system(
       paste(
-        "/home/eden/start_check.sh",
+#        "/home/eden/start_check.sh",
+          "./start_check.sh",
+        
         faa.path,
         ffn.path,
         input$eden_run_cpus,
@@ -1460,5 +1477,96 @@ size = "l")
       status$hmmpassed <- FALSE
     }
   })
+  
+  # enable buttons if eden finished and cleanup
+  observe({
+    if (status$eden_finished){
+      
+      showModal(modalDialog(
+        title = "Eden run finished!",
+        "To inspect the results go to the Dashboard tab",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+      
+      shinyjs::enable("checkButton")
+      shinyjs::enable("deletefiles")
+      status$filespassed <- FALSE
+      #   status$grouppassed <- FALSE
+      status$settingspassed <- FALSE
+      status$hmmpassed <- TRUE
+      status$num_fasta <- 0
+      status$num_hmm <- 0
+      status$num_faa <- 0
+      status$num_ffn <- 0
+      status$num_groups <- 0
+      
+      updateRadioButtons(session, "radio",
+                         selected = 2
+      )
+      updateRadioButtons(session, "intype",
+                         selected = "orf"
+      )
+      updateRadioButtons(session, "grouptype", selected = "pooling")
+      updateTextInput(session, "eden_run_name", value="eden_run_1")
+      updateSliderInput(session, "eden_run_gap", value="80")
+      updateNumericInput(session, "eden_run_cpus", value=4)
+  
+        unlink(faa.path, recursive = T, force = T)
+        unlink(ffn.path, recursive = T, force = T)
+        unlink(fasta.path, recursive = T, force = T)
+        unlink(hmm.path, recursive = T, force = T)
+        unlink(sample.path, recursive = T, force = T)
+        unlink("/home/eden/data/groups.txt",
+               recursive = T,
+               force = T)
+        unlink(log.path, recursive = T, force = T)
+        system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
+        if (!file.exists(fasta.path)) {
+          dir.create(fasta.path)
+        }
+        if (!file.exists(faa.path)) {
+          dir.create(faa.path)
+        }
+        if (!file.exists(ffn.path)) {
+          dir.create(ffn.path)
+        }
+        Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
+        Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
+        Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
+        
+        
+        if (!file.exists(fasta.path)) {
+          dir.create(fasta.path)
+        }
+        if (!file.exists(faa.path)) {
+          dir.create(faa.path)
+        }
+        if (!file.exists(ffn.path)) {
+          dir.create(ffn.path)
+        }
+        Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
+        Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
+        Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
+        
+        status <-
+          reactiveValues() # save the run status as a reactive object
+        input <-
+          reactiveValues() # save the run status as a reactive object
+    }
+  })
+  
+  # add col to job table
+  observeEvent(input$checkButton, {
+    new_row = data.frame(
+      job = input$eden_run_name,
+      gap_proportion = input$eden_run_gap,
+      groups = status$num_groups,
+      hmm_mode = input$radio
+    )
+    vals$Data = rbind(vals$Data, new_row)
+  })
+  
+  
 
   })

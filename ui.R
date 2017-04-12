@@ -91,9 +91,7 @@ dashboardPage(
             # infoBoxes with fill=FALSE
             fluidRow(
               # A static infoBox
-              infoBox(
-                "Fasta", uiOutput("dashboard1"), icon = icon("users"), color = "purple"
-              ),
+             
               uiOutput("TableBody")
 
             )),
