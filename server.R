@@ -395,6 +395,14 @@ size = "l")
               "</span>")
     }
     
+    
+    
+    output$logtable = renderDataTable({
+      logtable <- read.csv2(log.path)
+      logtable
+    })
+    
+    
     return(msg)
   }
   
@@ -469,6 +477,26 @@ size = "l")
     cat(paste("lock.file: ",lock.file,  " \n"))
   })
   
+  output$stateinfo <- renderPrint({
+    cat(paste("status$eden_finished: ", status$eden_finished,  " \n"))
+    cat(paste("status$eden_failed : ",status$eden_failed ,  " \n"))
+    cat(paste("status$orf_finished : ",status$orf_finished ,  " \n"))
+  })
+  
+  output$cmdinfo <- renderPrint({
+    cat(  paste(
+      "/home/eden/start_check.sh",
+      
+#      "./start_check.sh",
+      faa.path,
+      ffn.path,
+      input$eden_run_cpus,
+      input$eden_run_name,
+      input$eden_run_gap / 100,
+      hmm.path,
+      sample.path))
+  })
+
   output$sessioninfo <- renderPrint({
     cat(paste("Session ID: ", Sys.getpid(), " \n"))
     cat(paste("Global Instance ID: ", instance_id, " \n"))
@@ -1509,6 +1537,8 @@ size = "l")
       status$num_faa <- 0
       status$num_ffn <- 0
       status$num_groups <- 0
+      status$eden_finished <- FALSE
+      
       
       updateRadioButtons(session, "radio",
                          selected = 2
@@ -1565,6 +1595,8 @@ size = "l")
     }
   })
   
+  
+
   # add col to job table
   observeEvent(input$checkButton, {
     new_row = data.frame(

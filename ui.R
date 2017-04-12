@@ -81,7 +81,7 @@ dashboardPage(
       icon = icon("dashboard")
     ),
     menuItem("Start new job", tabName = "newjob", icon = icon("th")),
-  
+    menuItem("View log", tabName = "log", icon = icon("th")),  
     menuItem("Developer", tabName = "developer", icon = icon("tasks"))
     
   )),
@@ -93,8 +93,11 @@ dashboardPage(
             # infoBoxes with fill=FALSE
             fluidRow(
               # A static infoBox
-             
-              uiOutput("TableBody")
+              htmlOutput("statusfinished"),
+              htmlOutput("statuscheck"), 
+              uiOutput("TableBody"),
+              htmlOutput("statusrunning")
+             # htmlOutput("timeline")
 
             )),
     
@@ -121,6 +124,13 @@ dashboardPage(
               box( title = uiOutput("box4status"), uiOutput("upload_ui_bottom"),  status = "primary", solidHeader=T, width = NULL)))),
 
                   # Third tab content
+    # Second tab content
+    tabItem(tabName = "log",
+            h2("Log"),
+            fluidRow(dataTableOutput("logtable"))),
+    
+    # Third tab content
+    
     tabItem(tabName = "developer",
             h2("Developer informations"),
             fluidRow(
@@ -131,7 +141,11 @@ dashboardPage(
                    verbatimTextOutput("queryText"), width = NULL),
               
               box( title ="statusinformation",
-                   verbatimTextOutput("sessioninfo"), width = NULL)
+                   verbatimTextOutput("sessioninfo"), width = NULL),
+              box( title ="command on button",
+                   verbatimTextOutput("cmdinfo"), width = NULL),
+              box( title ="system state",
+                   verbatimTextOutput("stateinfo"), width = NULL)
               ),
               column(width=6, 
               box( title ="clientData values",
