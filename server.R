@@ -858,7 +858,7 @@ size = "l")
   
   output$upload_ui_buttons <- renderUI({
     conditionalPanel(
-      condition = "input.tsp=='start",
+      condition = "input.tsp=='overview",
       # htmlOutput("warning4"),
       actionButton('checkButton', label = "start analysis")#,
       #    shinyjs::hidden(
@@ -1618,12 +1618,12 @@ status$dataset <- input$dataset
   })
   
   # add col to job table
-  observeEvent(input$checkButton, {
-    new_row = data.frame(
-      job = input$eden_run_name,
-    )
-    vals$Data = rbind(vals$Data, new_row)
-  })
+#  observeEvent(input$checkButton, {
+#    new_row = data.frame(
+#      job = input$eden_run_name,
+#    )
+#    vals$Data = rbind(vals$Data, new_row)
+#  })
   
   
   ############ start eden-visualizer ###########
@@ -1820,6 +1820,7 @@ status$dataset <- input$dataset
       input.tsp=='histogram' ||
       input.tsp=='box' ||
       input.tsp=='start' ||
+input.tsp=='overview' ||
       input.tsp=='categories' ",
   #    helpText("Select which analysis run you want to show"),
       selectInput(

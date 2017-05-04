@@ -290,17 +290,19 @@ dashboardPage(
                     #                  uiOutput("start_UI")
                     #                  ),
                      
-                     conditionalPanel(
-                       condition = "input.tsp=='start'",
+#                     conditionalPanel(
+#                       condition = "input.tsp=='start'"#,
                        #htmlOutput("reloadstatus"), 
-                       actionButton('reloadButton', label = "Reload/Import files")
-                     ),
+                   #    actionButton('reloadButton', label = "Reload/Import files")
+#                     ),
                      
                      conditionalPanel(
                        condition = "input.tsp=='overview'",
                        
                        ##s
-                       downloadButton("dlTable", "Download filtered table")
+                       downloadButton("dlTable", "Download filtered table"),
+                       actionButton('reloadButton', label = "Reload/Import files"),
+                       textOutput("reloadmsg")
                      ),
                      
                      conditionalPanel(
