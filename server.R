@@ -486,7 +486,7 @@ size = "l")
   output$vizinfo <- renderPrint({
     cat(paste("csv.path: ",csv.path, " \n"))
     cat(paste("raw.path: ",raw.path, " \n"))
-    cat(paste("csv.path: ",raw.path, " \n"))
+    cat(paste("tar.path: ",tar.path, " \n"))
     cat(paste("status$dataset: ",status$dataset,  " \n"))
   })
   
@@ -1094,15 +1094,15 @@ size = "l")
       <p><strong>Eden finished!</stong>  <a href='../eden-visualizer' class='alert-link'> download and visualize the results</p>"
       # clean up
    
-    #   unlink(faa.path, recursive = T, force = T)
-    #  unlink(ffn.path, recursive = T, force = T)
-    #  unlink(fasta.path, recursive = T, force = T)
-    #  unlink(hmm.path, recursive = T, force = T)
-    #  unlink(sample.path, recursive = T, force = T)
-    #  unlink("/home/eden/data/groups.txt",
-    #         recursive = T,
-    #         force = T)
-    #  unlink(log.path, recursive = T, force = T)
+      unlink(faa.path, recursive = T, force = T)
+      unlink(ffn.path, recursive = T, force = T)
+      unlink(fasta.path, recursive = T, force = T)
+      unlink(hmm.path, recursive = T, force = T)
+      unlink(sample.path, recursive = T, force = T)
+      unlink("/home/eden/data/groups.txt",
+             recursive = T,
+             force = T)
+      unlink(log.path, recursive = T, force = T)
       system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
       if (!file.exists(fasta.path)) {
         dir.create(fasta.path)
@@ -1182,15 +1182,15 @@ size = "l")
   
   ### clean up routine
   cancel.onSessionEnded <- session$onSessionEnded(function() {
- #   unlink(faa.path, recursive = T, force = T)
- #   unlink(ffn.path, recursive = T, force = T)
-#    unlink(fasta.path, recursive = T, force = T)
-#    unlink(hmm.path, recursive = T, force = T)
-#    unlink(sample.path, recursive = T, force = T)
-#    unlink("/home/eden/data/groups.txt",
-#           recursive = T,
-#           force = T)
-#    unlink(log.path, recursive = T, force = T)
+    unlink(faa.path, recursive = T, force = T)
+    unlink(ffn.path, recursive = T, force = T)
+    unlink(fasta.path, recursive = T, force = T)
+    unlink(hmm.path, recursive = T, force = T)
+    unlink(sample.path, recursive = T, force = T)
+    unlink("/home/eden/data/groups.txt",
+          recursive = T,
+           force = T)
+    unlink(log.path, recursive = T, force = T)
     system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
     if (!file.exists(fasta.path)) {
       dir.create(fasta.path)

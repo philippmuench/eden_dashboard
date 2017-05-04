@@ -131,9 +131,8 @@ dashboardPage(
       tabName = "dashboard",
       icon = icon("dashboard")
     ),
-    menuItem("Start new job", tabName = "newjob", icon = icon("th")),
-    menuItem("Show job", tabName = "showjob", icon = icon("th")),
-
+    menuItem("Start new job", tabName = "newjob", icon = icon("road")),
+    menuItem("Show job", tabName = "showjob", icon = icon("pie-chart"),  badgeLabel = length(list.files(csv.path)),badgeColor = "green"),
     conditionalPanel(
       condition = "input.sid == 'showjob'",
       uiOutput("main_ui")
@@ -142,10 +141,12 @@ dashboardPage(
     
         
     
-    menuItem("View log", tabName = "log", icon = icon("th")),  
-    menuItem("Developer", tabName = "developer", icon = icon("tasks")),
+    menuItem("View log", tabName = "log", icon = icon("binoculars", lib = "font-awesome" )),  
+    menuItem("Developer", tabName = "developer", icon = icon("cogs",  lib = "font-awesome")),
     menuItem("Bug Reports", icon = icon("bug"),
-             href = "https://github.com/philippmuench/eden/issues")
+             href = "https://github.com/philippmuench/eden/issues"),
+    menuItem("Support", icon = icon("envelope", lib = "font-awesome"),
+             href = "mailto:philipp.muench@helmholtz-hzi.de")
   )
     
   ),
@@ -155,7 +156,7 @@ dashboardPage(
     # First tab content
     tabItem(tabName = "dashboard",
             # infoBoxes with fill=FALSE
-            fluidRow(column(width=6,
+            fluidRow(column(width=12,
               htmlOutput("welcome")),
               # A static infoBox
               htmlOutput("statusfinished"),
@@ -200,23 +201,23 @@ dashboardPage(
               useShinyjs(),
          
               
-              box( title = " ", status = "primary", solidHeader=T, width = 12,
+              box( title = "Figures and tables", status = "primary", solidHeader=  T, width = 12,
                 tabsetPanel(
-                  tabPanel(
-                    "Start",
-                    textOutput("reloadmsg"),
+          #        tabPanel(
+           #         "Start",
+          #          textOutput("reloadmsg"),
                  #  htmlOutput("welcome"),
                     # htmlOutput("tar_check"), 
                     # htmlOutput("newtar"), 
                     # htmlOutput("csv_check"), 
                     # htmlOutput("selected_dataset"),
                     # htmlOutput("selected_samples"),
-                    value = "start"
-                  ),
+         #           value = "start"
+        #          ),
                   
                   tabPanel(
                     "Overview",
-                    htmlOutput("overview_hint"),
+                #    htmlOutput("overview_hint"),
                     div(DT::dataTableOutput("table"), style = "font-size:80%"),
                     htmlOutput("overview_table"),
                     htmlOutput("summary2"),
@@ -270,11 +271,11 @@ dashboardPage(
                 )
               ),
               
-              box( title = "configuration", status = "primary", solidHeader=T, width = 12,
-                   wellPanel(
-                     #  conditionalPanel(condition = "input.tsp=='start' || input.tsp=='log'",
-                     #                   uiOutput("startdown_UI")),
-                     #uiOutput("main_ui"),
+              box( title = "Export & configureate", status = "primary", solidHeader=T, width = 12,
+         
+                   
+                   
+                     
                      conditionalPanel(
                        condition = "input.tsp=='map'",
                        tags$button(
@@ -284,16 +285,14 @@ dashboardPage(
                          onclick = "setTimeout(function(){window.close();},500);",
                          "Close Application"
                        )
-                     )
-                   ),
-                   
-                   wellPanel(
-                     conditionalPanel(condition = "input.tsp=='start' || input.tsp=='log'",
-                                      uiOutput("start_UI")),
+                     ),
+                    # conditionalPanel(condition = "input.tsp=='start' || input.tsp=='log'",
+                    #                  uiOutput("start_UI")
+                    #                  ),
                      
                      conditionalPanel(
                        condition = "input.tsp=='start'",
-                       htmlOutput("reloadstatus"), 
+                       #htmlOutput("reloadstatus"), 
                        actionButton('reloadButton', label = "Reload/Import files")
                      ),
                      
@@ -361,7 +360,7 @@ dashboardPage(
                        checkboxInput('highlightbox', 'Highlight mean of selected elements'),
                        downloadButton("dlCurBoxPlot", "Download boxplot")
                      )
-                   )
+                   
               )
             ) 
             
@@ -378,7 +377,7 @@ dashboardPage(
     # Second tab content
     tabItem(tabName = "log",
             h2("Log"),
-            fluidRow(dataTableOutput("logtable"))),
+            fluidRow(column(width=12,dataTableOutput("logtable")))),
     
     # Third tab content
     
