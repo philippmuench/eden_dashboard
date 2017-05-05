@@ -85,8 +85,11 @@ if (file.exists("/home/eden/eden.sh")) {
   hmm.path <<- "model.hmm"
   log.path <<- "log.txt"
   lock.file <<- "lock.txt"
+  
 }
+
 jsResetCode <- "shinyjs.reset = function() {history.go(0)}"
+
 
 if (!file.exists(fasta.path)) {
   dir.create(fasta.path)
@@ -131,8 +134,8 @@ dashboardPage(
       tabName = "dashboard",
       icon = icon("dashboard")
     ),
-    menuItem("Start new job", tabName = "newjob", icon = icon("road")),
-    menuItem("Show job", tabName = "showjob", icon = icon("pie-chart"),  badgeLabel = length(list.files(csv.path)),badgeColor = "green"),
+    menuItem("Start new job", tabName = "newjob", icon = icon("road"),  badgeLabel = textOutput("text3"), badgeColor = "green"),
+    menuItem("Show job", tabName = "showjob", icon = icon("pie-chart"),  badgeLabel = textOutput("samplesnum"), badgeColor = "green"),
     conditionalPanel(
       condition = "input.sid == 'showjob'",
       uiOutput("main_ui")
@@ -226,7 +229,7 @@ dashboardPage(
                   
                   tabPanel(
                     "Annotation",
-                    htmlOutput("annotation_hint", inline = FALSE),
+                    #htmlOutput("annotation_hint", inline = FALSE),
                     plotOutput("annotationplotglobal", width = "100%", height =
                                  "auto"),
                     htmlOutput("annotation_figure"),
@@ -260,7 +263,7 @@ dashboardPage(
                   tabPanel(
                     "Boxplot",
                     h4(""),
-                    htmlOutput("boxplot_hint"),
+                   # htmlOutput("boxplot_hint"),
                     plotOutput("plot4", width = "100%", height = "auto"),
                     
                     div(DT::dataTableOutput("table_sample"), style = "font-size:80%"),
@@ -271,7 +274,7 @@ dashboardPage(
                 )
               ),
               
-              box( title = "Export & configureate", status = "primary", solidHeader=T, width = 12,
+              box( title = "Export & configure", status = "primary", solidHeader=T, width = 12,
          
                    
                    
@@ -300,6 +303,8 @@ dashboardPage(
                        condition = "input.tsp=='overview'",
                        
                        ##s
+                   
+                       actionButton('resetSelection', label = "Reset row selection"),#,   class =    "btn-block btn-primary"),
                        downloadButton("dlTable", "Download filtered table"),
                        actionButton('reloadButton', label = "Reload/Import files"),
                        textOutput("reloadmsg")

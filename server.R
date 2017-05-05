@@ -4,6 +4,8 @@ options(shiny.maxRequestSize = 2024 * 1024 ^ 2) # set max file size for file upl
 options(shiny.deprecation.messages = FALSE)
 options(shiny.sanitize.errors = FALSE)
 
+
+
 shinyServer(function(input, output, session) {
   instance_id <<- instance_id + 1
   this_instance <- instance_id
@@ -17,6 +19,18 @@ shinyServer(function(input, output, session) {
     )
   )
   
+  
+  output$text3 <- renderText({ 
+    status$serverstatus
+  })
+  
+  
+  output$samplesnum <- renderText({ 
+    status$samplesnumber <- length(list.dirs(csv.path))
+    as.character(status$samplesnumber)
+  })
+  
+  
   # get the query string
   observe({
     query <- parseQueryString(session$clientData$url_search)
@@ -24,7 +38,6 @@ shinyServer(function(input, output, session) {
       updateTextInput(session, "text", value = query[['text']])
     }
   })
-  
   
   output$TableBody <- renderUI({
     if(exists("vals")){
@@ -61,7 +74,6 @@ tags$script(
   Shiny.onInputChange('lastClick', Math.random())
   });"
 )
-
       ))
       } else {
         NULL
@@ -69,12 +81,8 @@ tags$script(
     })
   
   output$Main_table <- renderDataTable({
-    if(exists("vals")){
-      
-      
+    if(exists("vals$Data")){
       DT = vals$Data
-      
-      
       DT[["Actions"]] <-
         paste0(
           '
@@ -86,10 +94,8 @@ tags$script(
           1:nrow(vals$Data),
           '>Show results</button>
           </div>
-          
           '
         )
-      
       datatable(DT,
                 escape = F)
     } else {
@@ -97,20 +103,6 @@ tags$script(
     }
     
     
-  })
-  
-  
-  
-  fake_sales_modal <- modalDialog(fluidPage(h3(
-    strong("Monthly sales of selected brands"), align = "center"
-  ),
-  plotOutput('sales_plot')),
-  size = "l")
-  
-  output$sales_plot <- renderPlot({
-    require(ggplot2)
-    ggplot(vals$fake_sales, aes(x = month, y = sales, color = Brands)) +
-      geom_line()
   })
   
   ##Managing in row deletion
@@ -338,8 +330,9 @@ size = "l")
   status$groupnum <- 1
   status$showstart <- FALSE
   status$dataset <- "oligo.tar"
-  status$new_files <- FALSE
-  
+  status$newfiles <- FALSE
+  status$serverstatus <- "ready"
+
   # ==============================================================================================
   # check procedure for the detection which files are provided by the user
   # ==============================================================================================
@@ -370,12 +363,27 @@ size = "l")
   # ==============================================================================================
   # procedure to update log file / progress message
   # ==============================================================================================
+  # 
+
+  # function that checks if there are new tar files in the tar.path that have not folder in csv folder
+  check_new_file <- function(){
+    cat("x")
+    csvs <- list.dirs(csv.path, recursive = F, full.names = F)
+    tars <- list.files(tar.path, recursive = F, full.names = F)
+    if (!identical(csvs, tars)){
+      status$newfiles <- TRUE
+    } else {
+      status$newfiles <- FALSE
+    }
+  }
+  
+  
   # loads the log file and extract the informations for the check process bar
   get_new_log <- function() {
     cat(".")
     msg <- ""
     data <- read.table(log.path, header = F, sep = ";")
-    colnames(data) <- c("step", "steps", "message")
+    colnames(data) <- c("type", "time", "message")
     
     last_event <- data[nrow(data),]$message # current message
     steps <- data[nrow(data),]$steps # current step
@@ -384,6 +392,7 @@ size = "l")
     # print(last_event) # for debugging, print the last event
     if (last_event == "error") {
       # error signal
+      status$serverstatus <- "error"
       status$check_failed <<- TRUE
       msg <-
         paste("<span class='label label-danger'>check success</span>")
@@ -400,10 +409,19 @@ size = "l")
     }
     
     
-    
     output$logtable = renderDataTable({
-      logtable <- read.csv2(log.path)
-      logtable
+      if(file.exists(log.path)){
+
+        logtable <- read.csv2(log.path, header=F)
+        colnames(logtable) <- c("type", "time", "message")
+        logtable.rev <- apply(as.data.frame(logtable), 2, rev)  # reverse
+        logtable.rev 
+      } else {
+#        return(NULL)
+        logtable <- data.frame(type="error", "time" = -1, message= "no log file found")
+        logtable
+    }
+   
     })
     
     
@@ -663,8 +681,8 @@ size = "l")
         err <- system(cmd,  intern = TRUE)
       }
       out <- paste(err)
-      system2("echo",
-              paste('";;fasta files added" >> ', log.path, sep = ""))
+  #    system2("echo",
+  #            paste('";;fasta files added" >> ', log.path, sep = ""))
       status$fasta <- TRUE
       status$files <- list.files(path =  fasta.path,
                                  full.names = FALSE,
@@ -693,7 +711,7 @@ size = "l")
         err <- system(cmd,  intern = TRUE)
       }
       out <- paste(err)
-      system2("echo", paste('";;faa files added" >> ', log.path, sep = ""))
+  #    system2("echo", paste('";;faa files added" >> ', log.path, sep = ""))
       status$faa <- TRUE
       status$files <- list.files(path =  faa.path,
                                  full.names = FALSE,
@@ -728,7 +746,7 @@ size = "l")
         paste("mv ", hmmfile$datapath, " ", hmmfile$dest, sep = "")
       err <- system(cmd,  intern = TRUE)
       out <- paste(err)
-      system2("echo", paste('";;hmmfile added" >> ', log.path, sep = ""))
+  #    system2("echo", paste('";;hmmfile added" >> ', log.path, sep = ""))
       hmmfile_success <<- TRUE
       status$num_hmm <- 1
       
@@ -756,7 +774,7 @@ size = "l")
         err <- system(cmd,  intern = TRUE)
       }
       out <- paste(err)
-      system2("echo", paste('";;ffn files added" >> ', log.path, sep = ""))
+  #    system2("echo", paste('";;ffn files added" >> ', log.path, sep = ""))
       status$ffn <- TRUE
       status$files <- list.files(path =  ffn.path,
                                  full.names = FALSE,
@@ -967,6 +985,8 @@ size = "l")
   
   # delete files on button press
   observeEvent(input$deletefiles, {
+    status$serverstatus <- "ready"
+    status$samplesnumber <- 0
     # reset number of uploaded files to zero
     status$filespassed <- FALSE
     #   status$grouppassed <- FALSE
@@ -999,7 +1019,7 @@ size = "l")
              recursive = T,
              force = T)
       unlink(log.path, recursive = T, force = T)
-      system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
+      system2("echo", paste('";;server ready\n" >> ', log.path, sep = ""))
       if (!file.exists(fasta.path)) {
         dir.create(fasta.path)
       }
@@ -1064,8 +1084,8 @@ size = "l")
     )
     status$samples_provided <- TRUE
     status$num_groups <- members
-    system2("echo",
-            paste('";;grouping file updated" >> ', log.path, sep = ""))
+ #  system2("echo",
+  #          paste('";;grouping file updated" >> ', log.path, sep = ""))
     
   })
   
@@ -1075,6 +1095,7 @@ size = "l")
   
   get_running_status <- function() {
     if (file.exists(lock.file)) {
+      status$serverstatus <- "running"
       msg <-
         "</br><div class='alert alert-dismissible alert-info'>
       <button type='button' class='close' data-dismiss='alert'>&times;</button>
@@ -1088,6 +1109,7 @@ size = "l")
   
   get_finished_status <- function() {
     if (isolate(status$eden_finished)) {
+      print("eden finished")
       msg <-
         "</br><div class='alert alert-dismissible alert-info'>
       <button type='button' class='close' data-dismiss='alert'>&times;</button>
@@ -1103,7 +1125,7 @@ size = "l")
              recursive = T,
              force = T)
       unlink(log.path, recursive = T, force = T)
-      system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
+      system2("echo", paste('";;server ready\n" >> ', log.path, sep = ""))
       if (!file.exists(fasta.path)) {
         dir.create(fasta.path)
       }
@@ -1136,6 +1158,14 @@ size = "l")
     shinyjs::disable("checkButton")
     shinyjs::disable("deletefiles")
     
+    
+    showModal(modalDialog(
+      title = "Job submitted",
+      "You can now go to the log tab to obtain status information of the job",
+      easyClose = TRUE,
+      footer = NULL
+    ))
+    
     system(
       paste(
         "/home/eden/start_check.sh",
@@ -1159,6 +1189,7 @@ size = "l")
   # Function to update my_data
   update_log <- function() {
     my_log <<- get_new_log()
+    internal_check <<- check_new_file()
   }
   
   output$log = renderText({
@@ -1190,8 +1221,8 @@ size = "l")
     unlink("/home/eden/data/groups.txt",
           recursive = T,
            force = T)
-    unlink(log.path, recursive = T, force = T)
-    system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
+   # unlink(log.path, recursive = T, force = T)
+   #system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
     if (!file.exists(fasta.path)) {
       dir.create(fasta.path)
     }
@@ -1582,7 +1613,7 @@ status$dataset <- input$dataset
              recursive = T,
              force = T)
       unlink(log.path, recursive = T, force = T)
-      system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
+      system2("echo", paste('";;server ready\n" >> ', log.path, sep = ""))
       if (!file.exists(fasta.path)) {
         dir.create(fasta.path)
       }
@@ -1739,7 +1770,15 @@ status$dataset <- input$dataset
   output$table <- DT::renderDataTable(DT::datatable({
     require(pander)
     data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
-    data <- data[which(data$fdr <= input$pval), ]
+    
+    if (input$dofiltering == "pvalue") {
+   
+     data <- data[which(data$fdr <= input$pval), ] # sort based on pvalue
+    } else {
+      data <- data[which(data$ratio >= input$ratio), ] # sort based on ratio
+      
+    }
+    
     if (length(input$samples) > 1) {
       subset <- NULL
       data_pool <- NULL
@@ -1794,7 +1833,7 @@ status$dataset <- input$dataset
     if (input$dofiltering == "pvalue") {
       sliderInput(
         "pval",
-        label = "adjusted p-value threshold",
+        label = "adjusted P value threshold",
         min = .001,
         max = 1,
         value = 1
@@ -1802,12 +1841,11 @@ status$dataset <- input$dataset
     } else {
       sliderInput(
         "ratio",
-        label = "select ratio range to display",
-        min = round(min(data$ratio), digits = 2),
-        max = round(max(data$ratio), digits = 2),
-        value = c(round(min(data$ratio), digits = 2),
-                  round(max(data$ratio), digits = 2))
-      )
+        label = "select minimal ratio to display",
+        min = 0,
+        max = 1,
+        value =1)
+  
     }
   })
   
@@ -1844,13 +1882,11 @@ input.tsp=='overview' ||
       
       selectInput(
         'dofiltering',
-        label = 'Choose a way to filter matrix',
-        choices = c("pvalue", "ratio (not implemented)"),
+        label = 'Filter results',
+        choices = c("by P value" = "pvalue", "by dN/dS ratio" = "ratio"),
         selected = "no filtering"
       ),
-      uiOutput("dependentselection"),
-      actionButton('resetSelection', label = "Reset row selection",   class =
-                     "btn-block btn-primary")
+  uiOutput("dependentselection")
     )
   })
   
@@ -2291,6 +2327,25 @@ input.tsp=='overview' ||
     cat(length(input$samples))
   })
   
+  
+  observeEvent(input$reloadButton2, {
+    withProgress(message = 'Extract files, please wait', value = 0, {
+      extractTar(tar.path, raw.path, csv.path, progress=TRUE)
+    })
+
+    updateSelectInput(session,
+                      "dataset",  label = "Select run", choices = list.files(
+                        path = csv.path,
+                        full.names = FALSE,
+                        recursive = FALSE
+                      )
+    )
+    updateSelectInput(session, "samples")
+    
+    removeModal(session = getDefaultReactiveDomain())
+  })
+  
+  
 
   output$reloadmsg <- renderPrint({
     if (input$reloadButton) {
@@ -2300,13 +2355,13 @@ input.tsp=='overview' ||
       # if(!no_csv){
       updateSelectInput(session,
                         "dataset",  label = "Select run", choices = list.files(
-                          path = tar.path,
+                          path = csv.path,
                           full.names = FALSE,
                           recursive = FALSE
                         )
       )
       updateSelectInput(session, "samples")
-      status$new_files <<- FALSE
+  #    status$new_files <<- FALSE
       #}
     }
   })
@@ -2327,22 +2382,23 @@ input.tsp=='overview' ||
       
     })
   
+  
   observe({
-    if (status$new_files){
-      
+    if (status$newfiles){
       showModal(modalDialog(
         title = "New samples detected!",
-        "test",
+        actionButton('reloadButton2', label = "import files"), 
         easyClose = TRUE,
         footer = NULL
       ))
+
     }
     })
   
   
   output$reloadstatus <-
     renderText({
-      if (status$new_files){
+      if (status$newfiles){
         
         
         
@@ -2356,7 +2412,7 @@ input.tsp=='overview' ||
   # print if new files found 
   output$newtar <-
     renderText({
-      paste("<font color=\"#4db898\"><b>New tar::",status$new_files,
+      paste("<font color=\"#4db898\"><b>New tar::",status$newfiles,
             "</b></font>")
     })
   
