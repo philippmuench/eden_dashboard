@@ -6,11 +6,11 @@ library(ggplot2)
 library(shinydashboard)
 library(data.table)
 library(DT)
+library(zoo)
 library(pander)
-
 source("functions.R")
 
-# set path variable
+########## startup settings ##########
 if (file.exists("/home/eden/eden.sh")) {
   # we are inside the docker container
   # packrat::on()
@@ -18,16 +18,26 @@ if (file.exists("/home/eden/eden.sh")) {
   tar.path <<- "/home/eden/data/tar" # folder where .tar files are located (eden output)
   raw.path <<- "/home/eden/data/raw" # folder where unpacked .tar files are located
   annotation.path <<- "/home/eden/tigr_data" # folder werhere TIGR_ROLE_NAMES and TIGRFAMS_ROLE_LINK are located
-  dir.create(csv.path)
-  dir.create(raw.path)
-  dir.create(tar.path)
+
+    dir.create(csv.path)
+  
+    dir.create(raw.path)
+
+    
+    dir.create(tar.path)
+
+
+
 } else {
   # we are online hosted
   csv.path <<- "csv"
   tar.path <<- "tar"
   raw.path <<- "raw"
-  dir.create(csv.path)
+
+   dir.create(csv.path)
+  
   dir.create(raw.path)
+
   annotation.path <<- "annotation"
 }
 
@@ -87,9 +97,7 @@ if (file.exists("/home/eden/eden.sh")) {
   lock.file <<- "lock.txt"
   
 }
-
 jsResetCode <- "shinyjs.reset = function() {history.go(0)}"
-
 
 if (!file.exists(fasta.path)) {
   dir.create(fasta.path)
@@ -104,31 +112,28 @@ Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
 Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
 Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
 
-system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
+
+########## dashboard header ##########
+dbHeader <- dashboardHeader(titleWidth=200,
+                            
+                            # Set height of dashboardHeader
+                            tags$li(class = "dropdown",
+                                    tags$style(".main-header {max-height: 60px}"),
+                                    tags$style(".main-header .logo {height: 60px;}"),
+                                    tags$style(".sidebar-toggle {height: 60px; padding-top: 1px !important;}"),
+                                    tags$style(".navbar {min-height:60px !important}")
+                            )
+                            )
+
+dbHeader$children[[2]]$children <-  tags$a(href='',
+                                           tags$img(src='logo.png',height='47',width='115'))
 
 
-
-dbHeader <- dashboardHeader(title = "EDEN",
-                            tags$li(tableOutput("log"), class="dropdown",  style = "padding-top:15px; padding-bottom:10px;"),
-                            tags$li(a(href = 'http://shinyapps.company.com',
-                                      icon("power-off"),
-                                      title = "Back to Apps Home"),
-                                    class = "dropdown"))
-
-
-
-dashboardPage(
+dashboardPage(skin = "blue",
   dbHeader, 
-  #  dashboardHeader(
-  #    title = "Eden",
-  #    tableOutput("log"),
-  #    dropdownMenu(type = "notifications", 
-  #                 notificationItem(text = "this is an example error",
-  #                                  icon("warning")))
-  
-  #  ),
-  ## Sidebar content
-  dashboardSidebar(sidebarMenu(id = "sid",
+
+  ########## dashboard sidebar ##########
+  dashboardSidebar(width = 200,  tags$style(".left-side, .main-sidebar {padding-top: 60px}"), sidebarMenu(id = "sid",
     menuItem(
       "Dashboard",
       tabName = "dashboard",
@@ -139,88 +144,63 @@ dashboardPage(
     conditionalPanel(
       condition = "input.sid == 'showjob'",
       uiOutput("main_ui")
-      
     ),
-    
-        
-    
     menuItem("View log", tabName = "log", icon = icon("binoculars", lib = "font-awesome" )),  
     menuItem("Developer", tabName = "developer", icon = icon("cogs",  lib = "font-awesome")),
     menuItem("Bug Reports", icon = icon("bug"),
              href = "https://github.com/philippmuench/eden/issues"),
     menuItem("Support", icon = icon("envelope", lib = "font-awesome"),
-             href = "mailto:philipp.muench@helmholtz-hzi.de")
+             href = "mailto:philipp.muench@helmholtz-hzi.de"),
+    htmlOutput("log")
   )
-    
   ),
   
-  ## Body content
+  ########## dashboard body ##########
   dashboardBody( useShinyjs(),tabItems(
-    # First tab content
     tabItem(tabName = "dashboard",
-            # infoBoxes with fill=FALSE
+            fluidRow(
+              infoBoxOutput("lockfileBox")
+            ),
             fluidRow(column(width=12,
               htmlOutput("welcome")),
-              # A static infoBox
               htmlOutput("statusfinished"),
               htmlOutput("statuscheck"), 
-              uiOutput("TableBody"),
               htmlOutput("statusrunning")
-              # htmlOutput("timeline")
-              
             )),
     
-    # Second tab content
+    ### body: newjob
     tabItem(tabName = "newjob",
             h2("Start a new job"),
             fluidRow(
               column(width=6, 
                      
-                     box( title =  uiOutput("box1status"), #"File upload",
+                     box( title =  htmlOutput("box1statustest"), #"File upload",
                           uiOutput("upload_ui_head"),
                           tableOutput("fasta_uploaded"),
                           tableOutput("faa_uploaded"),
                           tableOutput("ffn_uploaded"), status = "primary", solidHeader=T, width = NULL
-                          #htmlOutput("check_response1")
                      ),
-                     box( title =  uiOutput("box2status"),  uiOutput("upload_ui_mid"),status = "primary", solidHeader=T, width = NULL),
+                     box( title =  htmlOutput("box2status"),  uiOutput("upload_ui_mid"),status = "primary", solidHeader=T, width = NULL),
                      box( title =  "Reset",  uiOutput("reset_ui_buttons"),status = "primary", solidHeader=T, width = NULL),
                      uiOutput("startEDEN")
                      
               ),
               column(width=6,
-                     box( title = uiOutput("box3status"),  uiOutput("upload_ui_hmm"),tableOutput("hmm_uploaded"), width = NULL, status = "primary", solidHeader=T),
+                     box( title = htmlOutput("box3status"),  uiOutput("upload_ui_hmm"),tableOutput("hmm_uploaded"), width = NULL, status = "primary", solidHeader=T),
                      box( title = uiOutput("box4status"), uiOutput("upload_ui_bottom"),  status = "primary", solidHeader=T, width = NULL)))),
     
     
-    
-    
-    
-    # Second tab content
+    # body: inspect job
     tabItem(tabName = "showjob",
             h2("inspect a job"),
             
             fluidRow(
               useShinyjs(),
-         
-              
-              box( title = "Figures and tables", status = "primary", solidHeader=  T, width = 12,
+      
+              box( id ="figurebox", title = "Figures and tables", status = "primary", solidHeader=  T, width = 12,
                 tabsetPanel(
-          #        tabPanel(
-           #         "Start",
-          #          textOutput("reloadmsg"),
-                 #  htmlOutput("welcome"),
-                    # htmlOutput("tar_check"), 
-                    # htmlOutput("newtar"), 
-                    # htmlOutput("csv_check"), 
-                    # htmlOutput("selected_dataset"),
-                    # htmlOutput("selected_samples"),
-         #           value = "start"
-        #          ),
-                  
                   tabPanel(
                     "Overview",
-                #    htmlOutput("overview_hint"),
                     div(DT::dataTableOutput("table"), style = "font-size:80%"),
                     htmlOutput("overview_table"),
                     htmlOutput("summary2"),
@@ -229,7 +209,6 @@ dashboardPage(
                   
                   tabPanel(
                     "Annotation",
-                    #htmlOutput("annotation_hint", inline = FALSE),
                     plotOutput("annotationplotglobal", width = "100%", height =
                                  "auto"),
                     htmlOutput("annotation_figure"),
@@ -263,9 +242,7 @@ dashboardPage(
                   tabPanel(
                     "Boxplot",
                     h4(""),
-                   # htmlOutput("boxplot_hint"),
                     plotOutput("plot4", width = "100%", height = "auto"),
-                    
                     div(DT::dataTableOutput("table_sample"), style = "font-size:80%"),
                     
                     value = "box"
@@ -273,48 +250,22 @@ dashboardPage(
                   id = "tsp"
                 )
               ),
-              
-              box( title = "Export & configure", status = "primary", solidHeader=T, width = 12,
-         
-                   
-                   
+          
+              box( title = "Plot settings", status = "primary", solidHeader=T, width = 12,
                      
-                     conditionalPanel(
-                       condition = "input.tsp=='map'",
-                       tags$button(
-                         id = 'close',
-                         type = "button",
-                         class = "btn action-button",
-                         onclick = "setTimeout(function(){window.close();},500);",
-                         "Close Application"
-                       )
-                     ),
-                    # conditionalPanel(condition = "input.tsp=='start' || input.tsp=='log'",
-                    #                  uiOutput("start_UI")
-                    #                  ),
-                     
-#                     conditionalPanel(
-#                       condition = "input.tsp=='start'"#,
-                       #htmlOutput("reloadstatus"), 
-                   #    actionButton('reloadButton', label = "Reload/Import files")
-#                     ),
-                     
+                   # barplot download
                      conditionalPanel(
                        condition = "input.tsp=='overview'",
-                       
-                       ##s
+                       downloadButton("dlTable", "Download filtered table")
+                     ),
+                     
+                  # barplot download
+                   conditionalPanel(
+                     condition = "input.tsp=='annotation'",
+                     downloadButton("dlAnnotationPlot", "Download barplot")
+                   ),
                    
-                       actionButton('resetSelection', label = "Reset row selection"),#,   class =    "btn-block btn-primary"),
-                       downloadButton("dlTable", "Download filtered table"),
-                       actionButton('reloadButton', label = "Reload/Import files"),
-                       textOutput("reloadmsg")
-                     ),
-                     
-                     conditionalPanel(
-                       condition = "input.tsp=='annotation'",
-                       downloadButton("dlAnnotationPlot", "Download barplot")
-                     ),
-                     
+                   # sequenceplot options
                      conditionalPanel(
                        condition = "input.tsp=='alignment'",
                        checkboxInput('points', 'show points', value =
@@ -323,6 +274,7 @@ dashboardPage(
                        downloadButton("dlCurSequenceplot", "Download sequenceplot")
                      ),
                      
+                   # histogram options
                      conditionalPanel(
                        condition = "input.tsp=='histogram'",
                        sliderInput(
@@ -337,8 +289,8 @@ dashboardPage(
                        checkboxInput('facet', 'Facet by sample'),
                        downloadButton("dlCurPlot", "Download histogram")
                      ),
-                     #   conditionalPanel(condition = "input.tsp=='start'", uiOutput("reload_ui")), 
-                     
+                    
+                   # categorie options
                      conditionalPanel(
                        condition = "input.tsp=='categories'",
                        checkboxInput('navalues', 'remove NA', value =
@@ -368,26 +320,25 @@ dashboardPage(
                        downloadButton("dlCurBoxPlot", "Download boxplot")
                      )
                    
+                   
+              ), 
+              
+              box( title = "Export & configure", status = "primary", solidHeader=T, width = 12,
+                   condition = "input.tsp=='overview'",
+                   actionButton('resetSelection', label = "Reset row selection"),
+                 
+                   actionButton('reloadButton', label = "Reload/Import files"),
+                   textOutput("reloadmsg")
               )
             ) 
-            
            ),
-    
-    
-    
-    
-    
-    
-    
-    
-    # Third tab content
-    # Second tab content
+  
+    # body: logtable
     tabItem(tabName = "log",
             h2("Log"),
-            fluidRow(column(width=12,dataTableOutput("logtable")))),
+            fluidRow(column(width=12,htmlOutput("logtable")))),
     
-    # Third tab content
-    
+    # body: developer 
     tabItem(tabName = "developer",
             h2("Developer informations"),
             fluidRow(
@@ -415,6 +366,8 @@ dashboardPage(
                           verbatimTextOutput("vizinfo"), width = NULL)
               )
               
-            )
-    ))
-  ))
+       )
+    )
+    )
+  )
+  )

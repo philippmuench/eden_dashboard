@@ -226,10 +226,10 @@ fisher_test <- function(dnds_summary) {
     TestMartix <-
       matrix(
         c(
-          dnds_summary$sum_pN[i],
-          dnds_summary$sum_pS[i],
-          sum(dnds_summary$sum_pN) - dnds_summary$sum_pN[i],
-          sum(dnds_summary$sum_pS) - dnds_summary$sum_pS[i]
+          round(dnds_summary$sum_pN[i]),
+          round(dnds_summary$sum_pS[i]),
+          round(sum(dnds_summary$sum_pN)) - round(dnds_summary$sum_pN[i]),
+          round(sum(dnds_summary$sum_pS)) - round(dnds_summary$sum_pS[i])
         ),
         nrow = 2,
         dimnames = list(
@@ -238,7 +238,7 @@ fisher_test <- function(dnds_summary) {
         )
       )
     dnds_summary$pvalue[i] <-
-      fisher.test(TestMartix, alternative = "greater")$p.value
+      fisher.test(TestMartix, alternative = "greater",  workspace=1e9)$p.value
   }
   # fdr correction
   dnds_summary$fdr <- p.adjust(dnds_summary$pvalue, method = "fdr")
@@ -481,7 +481,7 @@ sliding_window <-
            gap_data,
            w_size = 10,
            g_threshold = 0.2) {
-    require(zoo)
+
     dNdS_window <- rep(0, length(dN))
     if (w_size > 0) {
       dN_window <- rollsum(dN, w_size, fill = list(NA, NULL, NA))
@@ -500,10 +500,10 @@ sliding_window <-
     for (i in 1:length(dNdS_window)) {
       if (dNdS_gap[i] < g_threshold) {
         if (!is.na(dN_window[i]) && !is.na(dS_window[i])) {
-          test_matrix <-  matrix(c(dN_window[i], dN_all,
-                                   dS_window[i], dS_all), nrow = 2)
+          test_matrix <-  matrix(c(round(dN_window[i]), round(dN_all),
+                                   round(dS_window[i]), round(dS_all)), nrow = 2)
           pval <-
-            fisher.test(test_matrix, alternative = c("greater"))[["p.value"]]
+            fisher.test(test_matrix, alternative = c("greater"),  workspace=1e9)[["p.value"]]
           window[i] <- p.adjust(pval, method = "fdr", n = length(window))
         } else {
           window[i] <- 1

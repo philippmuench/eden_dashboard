@@ -4,8 +4,6 @@ options(shiny.maxRequestSize = 2024 * 1024 ^ 2) # set max file size for file upl
 options(shiny.deprecation.messages = FALSE)
 options(shiny.sanitize.errors = FALSE)
 
-
-
 shinyServer(function(input, output, session) {
   instance_id <<- instance_id + 1
   this_instance <- instance_id
@@ -19,17 +17,14 @@ shinyServer(function(input, output, session) {
     )
   )
   
-  
   output$text3 <- renderText({ 
     status$serverstatus
   })
   
-  
   output$samplesnum <- renderText({ 
     status$samplesnumber <- length(list.dirs(csv.path))
-    as.character(status$samplesnumber)
+    as.character(status$samplesnumber -1)
   })
-  
   
   # get the query string
   observe({
@@ -39,200 +34,6 @@ shinyServer(function(input, output, session) {
     }
   })
   
-  output$TableBody <- renderUI({
-    if(exists("vals")){
-      fluidPage(box(
-        width = 12,
-        column(
-          6,
-          offset = 6,
-          HTML(
-            '<div class="btn-group" role="group" aria-label="Basic example">'
-          ),
-          
-          HTML('</div>')
-        ),
-        
-        column(12, dataTableOutput("Main_table")),
-        tags$script(
-          HTML(
-            '$(document).on("click", "input", function () {
-            var checkboxes = document.getElementsByName("row_selected");
-            var checkboxesChecked = [];
-            for (var i=0; i<checkboxes.length; i++) {
-            if (checkboxes[i].checked) {
-            checkboxesChecked.push(checkboxes[i].value);
-            }
-            }
-            Shiny.onInputChange("checked_rows",checkboxesChecked);
-    })'
-)
-        ),
-tags$script(
-  "$(document).on('click', '#Main_table button', function () {
-  Shiny.onInputChange('lastClickId',this.id);
-  Shiny.onInputChange('lastClick', Math.random())
-  });"
-)
-      ))
-      } else {
-        NULL
-      }
-    })
-  
-  output$Main_table <- renderDataTable({
-    if(exists("vals$Data")){
-      DT = vals$Data
-      DT[["Actions"]] <-
-        paste0(
-          '
-          <div class="btn-group" role="group" aria-label="Basic example">
-          <button type="button" class="btn btn-secondary delete" id=delete_',
-          1:nrow(vals$Data),
-          '>Delete</button>
-          <button type="button" class="btn btn-secondary modify"id=modify_',
-          1:nrow(vals$Data),
-          '>Show results</button>
-          </div>
-          '
-        )
-      datatable(DT,
-                escape = F)
-    } else {
-      NULL
-    }
-    
-    
-  })
-  
-  ##Managing in row deletion
-  modal_modify <- modalDialog(fluidPage(
-    h3(strong("Row modification"), align = "center"),
-    hr(),
-    dataTableOutput('row_modif'),
-    actionButton("save_changes", "Save changes"),
-    
-    tags$script(
-      HTML(
-        "$(document).on('click', '#save_changes', function () {
-        var list_value=[]
-        for (i = 0; i < $( '.new_input' ).length; i++)
-        {
-        list_value.push($( '.new_input' )[i].value)
-        }
-        Shiny.onInputChange('newValue', list_value)
-        });"
-)
-    )
-    ),
-size = "l")
-  
-  
-  observeEvent(input$lastClick,
-               {
-                 if (input$lastClickId %like% "delete")
-                 {
-                   row_to_del = as.numeric(gsub("delete_", "", input$lastClickId))
-                   vals$Data = vals$Data[-row_to_del]
-                 }
-                 else if (input$lastClickId %like% "modify")
-                 {
-                   showModal(modal_modify)
-                 }
-               })
-  
-  output$row_modif <- renderDataTable({
-    selected_row = as.numeric(gsub("modify_", "", input$lastClickId))
-    old_row = vals$Data[selected_row]
-    row_change = list()
-    for (i in colnames(old_row))
-    {
-      if (is.numeric(vals$Data[[i]]))
-      {
-        row_change[[i]] <-
-          paste0('<input class="new_input" type="number" id=new_',
-                 i,
-                 '><br>')
-      }
-      else
-        row_change[[i]] <-
-          paste0('<input class="new_input" type="text" id=new_',
-                 i,
-                 '><br>')
-    }
-    row_change = as.data.table(row_change)
-    setnames(row_change, colnames(old_row))
-    DT = rbind(old_row, row_change)
-    rownames(DT) <- c("Current values", "New values")
-    DT
-    
-  }, escape = F, options = list(dom = 't', ordering = F), selection = "none")
-  
-  
-  observeEvent(input$newValue,
-               {
-                 newValue = lapply(input$newValue, function(col) {
-                   if (suppressWarnings(all(!is.na(as.numeric(
-                     as.character(col)
-                   ))))) {
-                     as.numeric(as.character(col))
-                   } else {
-                     col
-                   }
-                 })
-                 DF = data.frame(lapply(newValue, function(x)
-                   t(data.frame(x))))
-                 colnames(DF) = colnames(vals$Data)
-                 vals$Data[as.numeric(gsub("modify_", "", input$lastClickId))] <-
-                   DF
-                 
-               })
-  
-  # Return the components of the URL in a string:
-  output$urlText <- renderText({
-    paste(
-      sep = "",
-      "protocol: ",
-      session$clientData$url_protocol,
-      "\n",
-      "hostname: ",
-      session$clientData$url_hostname,
-      "\n",
-      "pathname: ",
-      session$clientData$url_pathname,
-      "\n",
-      "port: ",
-      session$clientData$url_port,
-      "\n",
-      "search: ",
-      session$clientData$url_search,
-      "\n"
-    )
-  })
-  
-  # Parse the GET query string
-  output$queryText <- renderText({
-    query <- parseQueryString(session$clientData$url_search)
-    
-    # Return a string with key-value pairs
-    paste(names(query), query, sep = "=", collapse = ", ")
-  })
-  
-  # Store in a convenience variable
-  cdata <- session$clientData
-  
-  # Values from cdata returned as text
-  output$clientdataText <- renderText({
-    cnames <- names(cdata)
-    
-    allvalues <- lapply(cnames, function(name) {
-      paste(name, cdata[[name]], sep = " = ")
-    })
-    paste(allvalues, collapse = "\n")
-  })
-  
-  
-  ###### END TABLE
   
   # which fields are mandatory
   fieldsMandatory <- c("eden_run_name")
@@ -332,7 +133,9 @@ size = "l")
   status$dataset <- "oligo.tar"
   status$newfiles <- FALSE
   status$serverstatus <- "ready"
+  status$eden_error <- FALSE
 
+  
   # ==============================================================================================
   # check procedure for the detection which files are provided by the user
   # ==============================================================================================
@@ -350,24 +153,21 @@ size = "l")
   
   ### finished status
   # function to evaluate if a process is running in the background
-  update_finished_status <- function() {
-    my_finished_status <<-
-      get_finished_status() # get_new_status returns the html-alert box visible on the first page
-  }
-  output$statusfinished = renderText({
-    invalidateLater(millis = 1000, session) # update every 1 seconds
-    update_finished_status() # get a new status line
-  })
-  
-  
+#  update_finished_status <- function() {
+ #   my_finished_status <<-
+#      get_finished_status() # get_new_status returns the html-alert box visible on the first page
+#  }
+#  output$statusfinished = renderText({
+#    invalidateLater(millis = 1000, session) # update every 1 seconds
+#    update_finished_status() # get a new status line
+#  })
+  # 
   # ==============================================================================================
   # procedure to update log file / progress message
   # ==============================================================================================
-  # 
 
   # function that checks if there are new tar files in the tar.path that have not folder in csv folder
   check_new_file <- function(){
-    cat("x")
     csvs <- list.dirs(csv.path, recursive = F, full.names = F)
     tars <- list.files(tar.path, recursive = F, full.names = F)
     if (!identical(csvs, tars)){
@@ -377,55 +177,41 @@ size = "l")
     }
   }
   
-  
   # loads the log file and extract the informations for the check process bar
   get_new_log <- function() {
-    cat(".")
-    msg <- ""
-    data <- read.table(log.path, header = F, sep = ";")
-    colnames(data) <- c("type", "time", "message")
+#    cat(".")
+   msg <- ""
     
-    last_event <- data[nrow(data),]$message # current message
-    steps <- data[nrow(data),]$steps # current step
-    step <-
-      data[nrow(data),]$step # total number of steps till finished
-    # print(last_event) # for debugging, print the last event
-    if (last_event == "error") {
-      # error signal
-      status$serverstatus <- "error"
-      status$check_failed <<- TRUE
-      msg <-
-        paste("<span class='label label-danger'>check success</span>")
-    } else if (last_event == "finished") {
-      # finished signal for eden
-      msg <-
-        paste("<span class='label label-success'>eden finished</span>")
-      status$eden_finished <- TRUE
-    } else {
-      msg <-
-        paste("<span class='label label-success'>",
-              last_event,
-              "</span>")
-    }
-    
-    
-    output$logtable = renderDataTable({
-      if(file.exists(log.path)){
+    if(file.exists(log.path)){
+     if( file.info(log.path)$size >0){
+       data <- read.table(log.path, header = F, sep = ";")
+       colnames(data) <- c("type", "time", "message")
+       last_event <- data[nrow(data),]$message # current message
+       if (last_event == "error") {
+         status$eden_error <- TRUE
+         status$serverstatus <- "error"
+       } else if (last_event == "finished") {
+         status$eden_finished <- TRUE
+       }
+     }
+      output$logtable = renderText({
+        if(file.exists(log.path) & file.info(log.path)$size >0){
+          logtable <- read.csv2(log.path, header=F)
+          colnames(logtable) <- c("type", "time", "message")
+    #      logtable.rev <- apply(as.data.frame(logtable), 2, rev)  # reverse
+          last_event <- as.character( data[nrow(data),]$message) # current message
+          print(last_event) 
+        } else {
+          # either there is no log file at all or the log file is without content
+          return(NULL)
+        }
+      }
+      )
+      
+      return(msg)
+     }
 
-        logtable <- read.csv2(log.path, header=F)
-        colnames(logtable) <- c("type", "time", "message")
-        logtable.rev <- apply(as.data.frame(logtable), 2, rev)  # reverse
-        logtable.rev 
-      } else {
-#        return(NULL)
-        logtable <- data.frame(type="error", "time" = -1, message= "no log file found")
-        logtable
-    }
-   
-    })
     
-    
-    return(msg)
   }
   
   output$dashboard1 <- renderUI({
@@ -437,24 +223,25 @@ size = "l")
     paste0(status$num_fasta, " Files")
   })
   
-  output$box1status <- renderUI({
+  output$box1statustest <- renderText({
+    #i <- icon("ok", lib = "glyphicon")
+    #
     if (status$filespassed) {
       iconName <- "ok"
     } else {
       iconName <- "remove"
     }
-       icon(iconName, lib = "glyphicon")
-    #    p("File upload", iconName)
-    
-      })
+    paste0("Sequence files <i class='glyphicon glyphicon-",iconName,"'></i>")
+
+  })
   
-  output$box2status <- renderUI({
+  output$box2status <- renderText({
     if (status$grouppassed) {
       iconName <- "ok"
     } else {
       iconName <- "remove"
     }
-    icon(iconName, lib = "glyphicon")
+    paste0("Define grouping <i class='glyphicon glyphicon-",iconName,"'></i>")
   })
   
   output$startEDEN <- renderUI({
@@ -466,18 +253,19 @@ size = "l")
   })
   
   output$startError <- renderUI({
-    iconName <- "remove"
-    icon(iconName, lib = "glyphicon")
+ #   iconName <- "remove"
+#    icon(iconName, lib = "glyphicon")
+    paste0("Missing input data")
   })
   
   
-  output$box3status <- renderUI({
+  output$box3status <- renderText({
     if (status$hmmpassed) {
       iconName <- "ok"
     } else {
       iconName <- "remove"
     }
-    icon(iconName, lib = "glyphicon")
+    paste0("Define HMM file <i class='glyphicon glyphicon-",iconName,"'></i>")
   })
   
   output$statusinfo <- renderPrint({
@@ -534,23 +322,23 @@ size = "l")
     cat(paste("This Instance ID: ", this_instance, " \n"))
   })
   
-  output$box4status <- renderUI({
+  output$box4status <- renderText({
     if (TRUE) {
       iconName <- "ok"
     } else {
       iconName <- "remove"
     }
-  icon(iconName, lib = "glyphicon")
+    paste0("Settings <i class='glyphicon glyphicon-",iconName,"'></i>")
   })
   
   
-  output$box5status <- renderUI({
+  output$box5status <- renderText({
     if (status$filespassed & status$hmmpassed ) {
-      iconName <- "ok"
+      text <- "start anaylysis"
     } else {
-      iconName <- "remove"
+      text <- "Start analysis"
     }
-    icon(iconName, lib = "glyphicon")
+    text
   })
   
   output$upload_ui_head_a <- renderUI({
@@ -739,14 +527,12 @@ size = "l")
     else{
       # process ffn
       status$hmmpassed <- TRUE
-      cat("setting hmmpassed to true")
       hmmfile <- as.data.frame(input$hmmfile)
       hmmfile$dest <- hmm.path
       cmd <-
         paste("mv ", hmmfile$datapath, " ", hmmfile$dest, sep = "")
       err <- system(cmd,  intern = TRUE)
       out <- paste(err)
-  #    system2("echo", paste('";;hmmfile added" >> ', log.path, sep = ""))
       hmmfile_success <<- TRUE
       status$num_hmm <- 1
       
@@ -878,7 +664,7 @@ size = "l")
     conditionalPanel(
       condition = "input.tsp=='overview",
       # htmlOutput("warning4"),
-      actionButton('checkButton', label = "start analysis")#,
+      actionButton('checkButton', label = "run analysis")#,
       #    shinyjs::hidden(
       #      span(id = "checkButton", "start analysis"),
       #       div(id = "error",
@@ -997,7 +783,7 @@ size = "l")
     status$num_faa <- 0
     status$num_ffn <- 0
     status$num_groups <- 0
-    
+    status$eden_error <- FALSE
     updateRadioButtons(session, "radio",
                        selected = 2
     )
@@ -1011,6 +797,7 @@ size = "l")
     
     isolate({
       unlink(faa.path, recursive = T, force = T)
+     
       unlink(ffn.path, recursive = T, force = T)
       unlink(fasta.path, recursive = T, force = T)
       unlink(hmm.path, recursive = T, force = T)
@@ -1018,31 +805,11 @@ size = "l")
       unlink("/home/eden/data/groups.txt",
              recursive = T,
              force = T)
-      unlink(log.path, recursive = T, force = T)
-      system2("echo", paste('";;server ready\n" >> ', log.path, sep = ""))
-      if (!file.exists(fasta.path)) {
-        dir.create(fasta.path)
-      }
-      if (!file.exists(faa.path)) {
-        dir.create(faa.path)
-      }
-      if (!file.exists(ffn.path)) {
-        dir.create(ffn.path)
-      }
-      Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
-      Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
-      Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
-      
-      
-      if (!file.exists(fasta.path)) {
-        dir.create(fasta.path)
-      }
-      if (!file.exists(faa.path)) {
-        dir.create(faa.path)
-      }
-      if (!file.exists(ffn.path)) {
-        dir.create(ffn.path)
-      }
+
+      dir.create(fasta.path, showWarnings = FALSE)
+      dir.create(faa.path, showWarnings = FALSE)
+      dir.create(ffn.path, showWarnings = FALSE)
+  
       Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
       Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
       Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
@@ -1055,7 +822,6 @@ size = "l")
     })
   })
   
-  
   # iterate over input$name_ and input$ind_ and create a samples table
   observeEvent(input$updategrouping, {
     #  xgrouing <<- TRUE
@@ -1065,8 +831,8 @@ size = "l")
       temp <- paste0("name", i)
       temp2 <<- paste0("ind", i)
       nam[i] <- input[[temp]]
-      print(paste(basename(file_path_sans_ext(input[[temp2]])),  collapse =
-                    "+"))
+   #   print(paste(basename(file_path_sans_ext(input[[temp2]])),  collapse =
+   #                 "+"))
       #  sam[i] <- paste(substr(input[[temp2]], 1, nchar(input[[temp2]])-4), collapse="+")
       
       #  sam[i] <- paste(substr(input[[temp2]], 1, nchar(input[[temp2]])-4), collapse="+")
@@ -1096,57 +862,12 @@ size = "l")
   get_running_status <- function() {
     if (file.exists(lock.file)) {
       status$serverstatus <- "running"
-      msg <-
-        "</br><div class='alert alert-dismissible alert-info'>
-      <button type='button' class='close' data-dismiss='alert'>&times;</button>
-      <p><strong>A process is running in the background! Please wait</strong> until the process is finished.</p>"
-      # print ok when criteria are met
-      return(msg)
+      return(NULL)
     } else {
       return(NULL)
     }
   }
   
-  get_finished_status <- function() {
-    if (isolate(status$eden_finished)) {
-      print("eden finished")
-      msg <-
-        "</br><div class='alert alert-dismissible alert-info'>
-      <button type='button' class='close' data-dismiss='alert'>&times;</button>
-      <p><strong>Eden finished!</stong>  <a href='../eden-visualizer' class='alert-link'> download and visualize the results</p>"
-      # clean up
-   
-      unlink(faa.path, recursive = T, force = T)
-      unlink(ffn.path, recursive = T, force = T)
-      unlink(fasta.path, recursive = T, force = T)
-      unlink(hmm.path, recursive = T, force = T)
-      unlink(sample.path, recursive = T, force = T)
-      unlink("/home/eden/data/groups.txt",
-             recursive = T,
-             force = T)
-      unlink(log.path, recursive = T, force = T)
-      system2("echo", paste('";;server ready\n" >> ', log.path, sep = ""))
-      if (!file.exists(fasta.path)) {
-        dir.create(fasta.path)
-      }
-      if (!file.exists(faa.path)) {
-        dir.create(faa.path)
-      }
-      if (!file.exists(ffn.path)) {
-        dir.create(ffn.path)
-      }
-      Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
-      Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
-      Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
-      status <-
-        reactiveValues() # save the run status as a reactive object
-      input <-
-        reactiveValues() # save the run status as a reactive object
-      return(msg)
-    } else {
-      return(NULL)
-    }
-  }
   
   # ==============================================================================================
   # execution of shell scripts and update of statusmsg print
@@ -1193,9 +914,9 @@ size = "l")
   }
   
   output$log = renderText({
-    invalidateLater(millis = 1000, session)
+    invalidateLater(millis = 2000, session)
     update_log()
-    
+    NULL
   })
   
   output$text1 <-  renderText({
@@ -1216,22 +937,18 @@ size = "l")
     unlink(faa.path, recursive = T, force = T)
     unlink(ffn.path, recursive = T, force = T)
     unlink(fasta.path, recursive = T, force = T)
+    status$eden_error <- TRUE
     unlink(hmm.path, recursive = T, force = T)
     unlink(sample.path, recursive = T, force = T)
-    unlink("/home/eden/data/groups.txt",
-          recursive = T,
-           force = T)
-   # unlink(log.path, recursive = T, force = T)
-   #system2("echo", paste('";;server ready" >> ', log.path, sep = ""))
-    if (!file.exists(fasta.path)) {
-      dir.create(fasta.path)
+    if(file.exists("/home/eden/data/groups.txt")){
+      unlink("/home/eden/data/groups.txt",
+             recursive = T,
+             force = T)
     }
-    if (!file.exists(faa.path)) {
-      dir.create(faa.path)
-    }
-    if (!file.exists(ffn.path)) {
-      dir.create(ffn.path)
-    }
+  #  unlink(log.path, recursive = T, force = T)
+    dir.create(fasta.path)
+    dir.create(faa.path)
+    dir.create(ffn.path)
     Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
     Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
     Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
@@ -1423,98 +1140,6 @@ size = "l")
     msg
   })
   
-  ### new
-  output$timeline = renderText({
-    input$deletefiles
-    
-    
-    msg <- "  <ul class='timeline'>
-    <li>
-    <div class='timeline-badge success'><i class='glyphicon glyphicon-ok-sign'></i></div>
-    <div class='timeline-panel'>
-    <div class='timeline-heading'>
-    <h4 class='timeline-title'>process 1</h4>
-    <p><small class='text-muted'><i class='glyphicon glyphicon-time'></i>started 11 hours ago</small></p>
-    </div>
-    <div class='timeline-body'>
-    <p>cmd
-    </div>
-    </div>
-    </li>
-    <li class='timeline'>
-    <div class='timeline-badge warning'><i class='glyphicon glyphicon-ok-sign'></i></div>
-    <div class='timeline-panel'>
-    <div class='timeline-heading'>
-    <h4 class='timeline-title'>process2</h4>
-    </div>
-    <div class='timeline-body'>
-    
-    </div>
-    </div>
-    </li>
-    <li>
-    <div class='timeline-badge danger'><i class='glyphicon glyphicon-ok-sign'></i></div>
-    <div class='timeline-panel'>
-    <div class='timeline-heading'>
-    <h4 class='timeline-title'>process3</h4>
-    </div>
-    <div class='timeline-body'>
-    
-    </div>
-    </div>
-    </li>
-    
-    <li>
-    <div class='timeline-badge success'><i class='glyphicon glyphicon-ok-sign'></i></div>
-    <div class='timeline-panel'>
-    <div class='timeline-heading'>
-    <h4 class='timeline-title'>process5</h4>
-    </div>
-    <div class='timeline-body'>
-    
-    <hr>
-    <div class='btn-group'>
-    <button type='button' class='btn btn-primary btn-sm dropdown-toggle' data-toggle='dropdown'>
-    <i class='glyphicon glyphicon-cog'></i> <span class='caret'></span>
-    </button>
-    <ul class='dropdown-menu' role='menu'>
-    <li><a href='#'>Action</a></li>
-    <li><a href='#'>Another action</a></li>
-    <li><a href='#'>Something else here</a></li>
-    <li class='divider'></li>
-    <li><a href='#'>Separated link</a></li>
-    </ul>
-    </div>
-    </div>
-    </div>
-    </li>
-    <li>
-    <div class='timeline-panel'>
-    <div class='timeline-heading'>
-    <h4 class='timeline-title'>process6</h4>
-    </div>
-    <div class='timeline-body'>
-    
-    </div>
-    </div>
-    </li>
-    <li class='timeline'>
-    <div class='timeline-badge success'><i class='glyphicon glyphicon-repeat'></i></div>
-    <div class='timeline-panel'>
-    <div class='timeline-heading'>
-    <h4 class='timeline-title'>process7</h4>
-    </div>
-    <div class='timeline-body'>
-    
-    </div>
-    </div>
-    </li>
-    </ul>
-    "
-    
-    msg
-  })
-  
   # sample grouping status
   observeEvent(input$grouptype, {
     if (input$grouptype == "pooling"){
@@ -1565,13 +1190,26 @@ size = "l")
 status$dataset <- input$dataset
   })
   
-  
-  
+  observe({
+    if(status$eden_error){
+      
+      showModal(modalDialog(
+        title = "An error occured",
+        "Please go to the log tab to get informations about the error",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+      
+      
+      
+    }
+    
+    
+  })
   
   # enable buttons if eden finished and cleanup
   observe({
     if (status$eden_finished){
-      
       showModal(modalDialog(
         title = "Eden run finished!",
         "To inspect the results go to the Dashboard tab",
@@ -1580,9 +1218,9 @@ status$dataset <- input$dataset
       ))
       
       shinyjs::enable("checkButton")
-      shinyjs::enable("deletefiles")
+     shinyjs::enable("deletefiles")
       status$filespassed <- FALSE
-      #   status$grouppassed <- FALSE
+      ##   status$grouppassed <- FALSE
       status$settingspassed <- FALSE
       status$hmmpassed <- TRUE
       status$num_fasta <- 0
@@ -1591,9 +1229,8 @@ status$dataset <- input$dataset
       status$num_ffn <- 0
       status$num_groups <- 0
       status$eden_finished <- FALSE
-      
-      
-      updateRadioButtons(session, "radio",
+  
+     updateRadioButtons(session, "radio",
                          selected = 2
       )
       updateRadioButtons(session, "intype",
@@ -1603,40 +1240,23 @@ status$dataset <- input$dataset
       updateTextInput(session, "eden_run_name", value="eden_run_1")
       updateSliderInput(session, "eden_run_gap", value="80")
       updateNumericInput(session, "eden_run_cpus", value=4)
-      
+      status$eden_error <- FALSE
       unlink(faa.path, recursive = T, force = T)
       unlink(ffn.path, recursive = T, force = T)
-      unlink(fasta.path, recursive = T, force = T)
-      unlink(hmm.path, recursive = T, force = T)
+     unlink(fasta.path, recursive = T, force = T)
+     unlink(hmm.path, recursive = T, force = T)
       unlink(sample.path, recursive = T, force = T)
       unlink("/home/eden/data/groups.txt",
              recursive = T,
-             force = T)
-      unlink(log.path, recursive = T, force = T)
-      system2("echo", paste('";;server ready\n" >> ', log.path, sep = ""))
-      if (!file.exists(fasta.path)) {
+            force = T)
+   #unlink(log.path, recursive = T, force = T)
+    #  system2("echo", paste('"status;;initialize\n" >> ', log.path, sep = ""))
+     # system2("echo", paste('"status;;server ready\n" >> ', log.path, sep = ""))
+  
         dir.create(fasta.path)
-      }
-      if (!file.exists(faa.path)) {
         dir.create(faa.path)
-      }
-      if (!file.exists(ffn.path)) {
         dir.create(ffn.path)
-      }
-      Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
-      Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
-      Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
-      
-      
-      if (!file.exists(fasta.path)) {
-        dir.create(fasta.path)
-      }
-      if (!file.exists(faa.path)) {
-        dir.create(faa.path)
-      }
-      if (!file.exists(ffn.path)) {
-        dir.create(ffn.path)
-      }
+     
       Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
       Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
       Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
@@ -1648,13 +1268,67 @@ status$dataset <- input$dataset
     }
   })
   
-  # add col to job table
-#  observeEvent(input$checkButton, {
-#    new_row = data.frame(
-#      job = input$eden_run_name,
-#    )
-#    vals$Data = rbind(vals$Data, new_row)
-#  })
+
+  # enable buttons if eden finished and cleanup
+  observe({
+    if (status$eden_error){
+      showModal(modalDialog(
+        title = "An error occured!",
+        "todo",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+      
+      shinyjs::enable("checkButton")
+      shinyjs::enable("deletefiles")
+      status$filespassed <- FALSE
+      ##   status$grouppassed <- FALSE
+      status$settingspassed <- FALSE
+      status$hmmpassed <- TRUE
+      status$num_fasta <- 0
+      status$num_hmm <- 0
+      status$num_faa <- 0
+      status$num_ffn <- 0
+      status$num_groups <- 0
+      status$eden_finished <- FALSE
+      
+      updateRadioButtons(session, "radio",
+                         selected = 2
+      )
+      updateRadioButtons(session, "intype",
+                         selected = "orf"
+      )
+      updateRadioButtons(session, "grouptype", selected = "pooling")
+      updateTextInput(session, "eden_run_name", value="eden_run_1")
+      updateSliderInput(session, "eden_run_gap", value="80")
+      updateNumericInput(session, "eden_run_cpus", value=4)
+      status$eden_error <- FALSE
+      unlink(faa.path, recursive = T, force = T)
+      unlink(ffn.path, recursive = T, force = T)
+      unlink(fasta.path, recursive = T, force = T)
+      unlink(hmm.path, recursive = T, force = T)
+      unlink(sample.path, recursive = T, force = T)
+      unlink("/home/eden/data/groups.txt",
+             recursive = T,
+             force = T)
+      #unlink(log.path, recursive = T, force = T)
+      #  system2("echo", paste('"status;;initialize\n" >> ', log.path, sep = ""))
+      # system2("echo", paste('"status;;server ready\n" >> ', log.path, sep = ""))
+      
+      dir.create(fasta.path)
+      dir.create(faa.path)
+      dir.create(ffn.path)
+      
+      Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
+      Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
+      Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
+      
+      status <-
+        reactiveValues() # save the run status as a reactive object
+      input <-
+        reactiveValues() # save the run status as a reactive object
+    }
+  })
   
   
   ############ start eden-visualizer ###########
@@ -1695,17 +1369,17 @@ status$dataset <- input$dataset
       data.nonterm <- data[which(data$term != term), ]
       test.mat <-
         matrix(c(
-          sum(data.term$sum_pN),
-          sum(data.term$sum_pS),
-          sum(data.nonterm$sum_pN),
-          sum(data.nonterm$sum_pS)
+          round(sum(data.term$sum_pN)),
+          round(sum(data.term$sum_pS)),
+          round(sum(data.nonterm$sum_pN)),
+          round(sum(data.nonterm$sum_pS))
         ),
         nrow = 2,
         dimnames =
           list(c("background", "selected"),
                c("dN", "dS")))
       df[i, ]$pval <-
-        fisher.test(test.mat, alternative = "greater")$p.value
+        fisher.test(test.mat, alternative = "greater",  workspace=1e9)$p.value
       df[i, ]$elements <- df[i, ]$elements  + nrow(data.term)
       i <- i + 1
     }
@@ -1743,17 +1417,17 @@ status$dataset <- input$dataset
       data.nonsample <- data[which(data$sample != sample), ]
       test.mat <-
         matrix(c(
-          sum(data.sample$sum_pN),
-          sum(data.sample$sum_pS),
-          sum(data.nonsample$sum_pN),
-          sum(data.nonsample$sum_pS)
+          round(sum(data.sample$sum_pN)),
+          round(sum(data.sample$sum_pS)),
+          round(sum(data.nonsample$sum_pN)),
+          round(sum(data.nonsample$sum_pS))
         ),
         nrow = 2,
         dimnames =
           list(c("dN", "dS"),
                c("selected", "background")))
       df[i, ]$pval <-
-        fisher.test(test.mat, alternative = "greater")$p.value
+        fisher.test(test.mat, alternative = "greater", workspace=1e9)$p.value
       i <- i + 1
     }
     
@@ -2143,10 +1817,6 @@ input.tsp=='overview' ||
     print(p)
   }, height = 700)
   
-  observe({
-    if (input$close > 0)
-      stopApp() # stop shiny
-  })
   
   # boxplot
   output$sampleplot <- renderPlot({
@@ -2262,17 +1932,17 @@ input.tsp=='overview' ||
         
         test.mat <-
           matrix(c(
-            sum(data.selection$sum_pN),
-            sum(data.selection$sum_pS),
-            sum(data$sum_pN),
-            sum(data$sum_pS)
+            round(sum(data.selection$sum_pN)),
+            round(sum(data.selection$sum_pS)),
+            round(sum(data$sum_pN)),
+            round(sum(data$sum_pS))
           ),
           nrow = 2,
           dimnames =
             list(c("dN", "dS"),
                  c("selected", "background")))
         
-        pval <- fisher.test(test.mat, alternative = "greater")$p.value
+        pval <- fisher.test(test.mat, alternative = "greater", workspace = 1e9)$p.value
         ## selected
         paste(
           "</br><div class='panel panel-default'>
@@ -2382,26 +2052,64 @@ input.tsp=='overview' ||
       
     })
   
+  output$lockfileBox <- renderInfoBox({
+    if(file.exists(lock.file)){
+      infoBox(
+        "lockfile","process running", icon = icon("list"),
+        color = "red"
+      )    
+    } else {
+      infoBox(
+        "no lockfile","no process running", icon = icon("list"),
+        color = "green"
+      )
+    }
   
+  })
+  
+#  observe({
+#    observeEvent(status$eden_error ,{
+#      if(length(list.files(tar.path)) == 0) return(NULL)
+#      hide(id = "figurebox", anim = TRUE)
+#    })
+    
+#  })
+  
+  
+
   observe({
     if (status$newfiles){
-      showModal(modalDialog(
-        title = "New samples detected!",
-        actionButton('reloadButton2', label = "import files"), 
-        easyClose = TRUE,
-        footer = NULL
-      ))
+      #showModal(modalDialog(
+      #  title = "Preparing the viewer for new samples!","loading...",
+      #  loadtar(),
+      
+        # automatically imported here
+#        actionButton('reloadButton2', label = "import files"), 
+    #    easyClose = TRUE,
+    #    footer = NULL
+    #  ))
 
+      withProgress(message = 'Extract files, please wait', value = 0, {
+        extractTar(tar.path, raw.path, csv.path, progress=TRUE)
+      })
+      
+      updateSelectInput(session,
+                        "dataset",  label = "Select run", choices = list.files(
+                          path = csv.path,
+                          full.names = FALSE,
+                          recursive = FALSE
+                        )
+      )
+      
+      updateSelectInput(session, "samples")
+      
+      
     }
     })
-  
-  
+ 
   output$reloadstatus <-
     renderText({
       if (status$newfiles){
-        
-        
-        
         paste("<font color=\"#4db898\"><b>New samples detected! You have to import these samples to make them visible",
               "</b></font>")
         
