@@ -327,8 +327,8 @@ dashboardPage(skin = "blue",
                    condition = "input.tsp=='overview'",
                    actionButton('resetSelection', label = "Reset row selection"),
                  
-                   actionButton('reloadButton', label = "Reload/Import files"),
-                   textOutput("reloadmsg")
+                   actionButton('reloadButton', label = "Reload/Import files")
+                   #textOutput("reloadmsg")
               )
             ) 
            ),

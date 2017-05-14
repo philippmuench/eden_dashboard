@@ -269,6 +269,8 @@ shinyServer(function(input, output, session) {
   })
   
   output$statusinfo <- renderPrint({
+    cat(paste("input$dataset == '' : ",input$dataset == "", " \n"))
+    
     cat(paste("status$filespassed: ",status$filespassed, " \n"))
     cat(paste("status$grouppassed: ", status$grouppassed, " \n"))
     cat(paste("status$hmmpassed: ", status$hmmpassed, " \n"))
@@ -909,6 +911,7 @@ shinyServer(function(input, output, session) {
   
   # Function to update my_data
   update_log <- function() {
+   # print("nothing")
     my_log <<- get_new_log()
     internal_check <<- check_new_file()
   }
@@ -1438,45 +1441,54 @@ status$dataset <- input$dataset
     df
   }))
   
-  output$table <- DT::renderDataTable(DT::datatable(dataset, options = list(pageLength = 25)))
+  output$table <- DT::renderDataTable(
+    if(input$dataset != ""){
+      DT::datatable(dataset, options = list(pageLength = 25))
+    } 
+    )
   
   # Filter data based on selections
   output$table <- DT::renderDataTable(DT::datatable({
-    require(pander)
-    data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
     
-    if (input$dofiltering == "pvalue") {
-   
-     data <- data[which(data$fdr <= input$pval), ] # sort based on pvalue
-    } else {
-      data <- data[which(data$ratio >= input$ratio), ] # sort based on ratio
+    if(input$dataset != ""){
+      
+      require(pander)
+      data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
+      
+      if (input$dofiltering == "pvalue") {
+        
+        data <- data[which(data$fdr <= input$pval), ] # sort based on pvalue
+      } else {
+        data <- data[which(data$ratio >= input$ratio), ] # sort based on ratio
+        
+      }
+      
+      if (length(input$samples) > 1) {
+        subset <- NULL
+        data_pool <- NULL
+        for (i in 1:length(input$samples)) {
+          subset <- data[which(data$sample == input$samples[i]), ]
+          data_pool <- rbind(subset, data_pool)
+        }
+        data <- data_pool
+      } else {
+        data <- data[which(data$sample == input$samples), ]
+      }
+      data$stars <- add.significance.stars(data$fdr)
+      data$sum_pN <- NULL
+      data$sum_pS <- NULL
+      data$role <- NULL
+      data$pvalue <- NULL
+      data$ratio <- round(data$ratio, digits = 3)
+      data$fdr <- round(data$fdr, digits = 5)
+      num.name <<- nrow(data)
+      num.meanratio <<- round(mean(data$ratio, na.rm = T), digits = 2)
+      num.sd <<- round(sd(data$ratio, na.rm = T), digits = 3)
+      downloadObj <<- data # generate downloadable table
+      input$resetSelection
+      data
       
     }
-    
-    if (length(input$samples) > 1) {
-      subset <- NULL
-      data_pool <- NULL
-      for (i in 1:length(input$samples)) {
-        subset <- data[which(data$sample == input$samples[i]), ]
-        data_pool <- rbind(subset, data_pool)
-      }
-      data <- data_pool
-    } else {
-      data <- data[which(data$sample == input$samples), ]
-    }
-    data$stars <- add.significance.stars(data$fdr)
-    data$sum_pN <- NULL
-    data$sum_pS <- NULL
-    data$role <- NULL
-    data$pvalue <- NULL
-    data$ratio <- round(data$ratio, digits = 3)
-    data$fdr <- round(data$fdr, digits = 5)
-    num.name <<- nrow(data)
-    num.meanratio <<- round(mean(data$ratio, na.rm = T), digits = 2)
-    num.sd <<- round(sd(data$ratio, na.rm = T), digits = 3)
-    downloadObj <<- data # generate downloadable table
-    input$resetSelection
-    data
   }))
   
   #################
@@ -1487,18 +1499,23 @@ status$dataset <- input$dataset
   
   # render again if input$datase changes
   output$filters_UI <- renderUI({
-    # if (!no_csv){
-    dataset <- readCsv(paste(csv.path, status$dataset, sep = "/"))
-    selectInput(
-      "samples",
-      "Choose one or more samples:",
-      choices = levels(factor(dataset$sample)),
-      selected = c(levels(factor(
-        dataset()$sample
-      ))[1]),
-      multiple = T,
-      width = "100%"
-    ) 
+if(input$dataset != ""){
+  # if (!no_csv){
+  dataset <- readCsv(paste(csv.path, status$dataset, sep = "/"))
+  
+  
+  selectInput(
+    "samples",
+    "Choose one or more samples:",
+    choices = levels(factor(dataset$sample)),
+    selected = c(levels(factor(
+      dataset()$sample
+    ))[1]),
+    multiple = T,
+    width = "100%"
+  ) 
+
+}
     #}
   })
   
@@ -1827,20 +1844,25 @@ input.tsp=='overview' ||
   }, height = 200)
   
   output$alignmentplot <- renderPlot({
-    data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
-    data <- data[which(data$fdr <= input$pval), ]
-    data <- data[which(data$sample == input$samples), ]
-    data <- data[input$table_rows_selected, ]
-    if (length(input$table_rows_selected) > 0) {
-      # get the dnds an gap paths
-      p <- doAlignmentPlot(data, input)
-      downloadableAlignmentPlot <<- p
-    } else {
-      df <- data.frame()
-      p <- ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 100)
-      downloadableAlignmentPlot <<- p
+    
+    if (input$dataset != ""){
+      data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
+      data <- data[which(data$fdr <= input$pval), ]
+      data <- data[which(data$sample == input$samples), ]
+      data <- data[input$table_rows_selected, ]
+      if (length(input$table_rows_selected) > 0) {
+        # get the dnds an gap paths
+        p <- doAlignmentPlot(data, input)
+        downloadableAlignmentPlot <<- p
+      } else {
+        df <- data.frame()
+        p <- ggplot(df) + geom_point() + xlim(0, 10) + ylim(0, 100)
+        downloadableAlignmentPlot <<- p
+      }
+      # else write an error msg that the user have to select some rowss
+      
+      
     }
-    # else write an error msg that the user have to select some rowss
   }, height = 700)
   ####
   #### BOXPLOT TAB
@@ -1891,22 +1913,27 @@ input.tsp=='overview' ||
   
   # annotation plot
   output$annotationplotglobal <- renderPlot({
-    data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
-    data <- data[which(data$fdr <= input$pval), ]
-    if (length(input$samples) > 1) {
-      subset <- NULL
-      data_pool <- NULL
-      for (i in 1:length(input$samples)) {
-        subset <- data[which(data$sample == input$samples[i]), ]
-        data_pool <- rbind(subset, data_pool)
+    if(input$dataset != ""){
+      
+      data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
+      data <- data[which(data$fdr <= input$pval), ]
+      if (length(input$samples) > 1) {
+        subset <- NULL
+        data_pool <- NULL
+        for (i in 1:length(input$samples)) {
+          subset <- data[which(data$sample == input$samples[i]), ]
+          data_pool <- rbind(subset, data_pool)
+        }
+        data <- data_pool
+      } else {
+        data <- data[which(data$sample == input$samples), ]
       }
-      data <- data_pool
-    } else {
-      data <- data[which(data$sample == input$samples), ]
-    }
-    p <- doPlotAnnotationGlobal(data, input)
-    downloadableAnnotaionplot <<- p
-    print(p)
+      p <- doPlotAnnotationGlobal(data, input)
+      downloadableAnnotaionplot <<- p
+      print(p)
+    } 
+    
+
   }, height = 400)
   
   
@@ -1922,6 +1949,9 @@ input.tsp=='overview' ||
   
   output$summary2 <-
     renderText({
+      if(input$dataset != ""){
+        
+              
       data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
       data <- data[which(data$fdr <= input$pval), ]
       data <- data[which(data$sample == input$samples), ]
@@ -1968,6 +1998,8 @@ input.tsp=='overview' ||
           "please select rows from the table above to perform a fisher test")
       }
       
+      }
+      
       
     })
   
@@ -1998,11 +2030,60 @@ input.tsp=='overview' ||
   })
   
   
-  observeEvent(input$reloadButton2, {
+  observeEvent(input$reloadButton, {
     withProgress(message = 'Extract files, please wait', value = 0, {
       extractTar(tar.path, raw.path, csv.path, progress=TRUE)
     })
-
+    status$serverstatus <- "ready"
+    status$samplesnumber <- 0
+    # reset number of uploaded files to zero
+    status$filespassed <- FALSE
+    #   status$grouppassed <- FALSE
+    status$settingspassed <- FALSE
+    status$hmmpassed <- FALSE
+    status$num_fasta <- 0
+    status$num_hmm <- 0
+    status$num_faa <- 0
+    status$num_ffn <- 0
+    status$num_groups <- 0
+    status$eden_error <- FALSE
+    updateRadioButtons(session, "radio",
+                       selected = 2
+    )
+    updateRadioButtons(session, "intype",
+                       selected = "orf"
+    )
+    updateRadioButtons(session, "grouptype", selected = "pooling")
+    updateTextInput(session, "eden_run_name", value="eden_run_1")
+    updateSliderInput(session, "eden_run_gap", value="80")
+    updateNumericInput(session, "eden_run_cpus", value=4)
+    
+    isolate({
+      unlink(faa.path, recursive = T, force = T)
+      
+      unlink(ffn.path, recursive = T, force = T)
+      unlink(fasta.path, recursive = T, force = T)
+      unlink(hmm.path, recursive = T, force = T)
+      unlink(sample.path, recursive = T, force = T)
+      unlink("/home/eden/data/groups.txt",
+             recursive = T,
+             force = T)
+      
+      dir.create(fasta.path, showWarnings = FALSE)
+      dir.create(faa.path, showWarnings = FALSE)
+      dir.create(ffn.path, showWarnings = FALSE)
+      
+      Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
+      Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
+      Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
+      
+      status <-
+        reactiveValues() # save the run status as a reactive object
+      input <-
+        reactiveValues() # save the run status as a reactive object
+      
+    })
+    
     updateSelectInput(session,
                       "dataset",  label = "Select run", choices = list.files(
                         path = csv.path,
@@ -2011,30 +2092,11 @@ input.tsp=='overview' ||
                       )
     )
     updateSelectInput(session, "samples")
-    
-    removeModal(session = getDefaultReactiveDomain())
+
   })
   
   
 
-  output$reloadmsg <- renderPrint({
-    if (input$reloadButton) {
-      withProgress(message = 'Extract files, please wait', value = 0, {
-        extractTar(tar.path, raw.path, csv.path, progress=TRUE)
-      })
-      # if(!no_csv){
-      updateSelectInput(session,
-                        "dataset",  label = "Select run", choices = list.files(
-                          path = csv.path,
-                          full.names = FALSE,
-                          recursive = FALSE
-                        )
-      )
-      updateSelectInput(session, "samples")
-  #    status$new_files <<- FALSE
-      #}
-    }
-  })
   
   #################
   # RENDER html
@@ -2089,21 +2151,21 @@ input.tsp=='overview' ||
     #    footer = NULL
     #  ))
 
-      withProgress(message = 'Extract files, please wait', value = 0, {
-        extractTar(tar.path, raw.path, csv.path, progress=TRUE)
-      })
+  #    withProgress(message = 'Extract files, please wait', value = 0, {
+  #      extractTar(tar.path, raw.path, csv.path, progress=TRUE)
+  #    })
       
-      updateSelectInput(session,
-                        "dataset",  label = "Select run", choices = list.files(
-                          path = csv.path,
-                          full.names = FALSE,
-                          recursive = FALSE
-                        )
-      )
+  #    updateSelectInput(session,
+  #                      "dataset",  label = "Select run", choices = list.files(
+  #                        path = csv.path,
+  #                        full.names = FALSE,
+  #                        recursive = FALSE
+  #                      )
+  #    )
       
-      updateSelectInput(session, "samples")
+   #   updateSelectInput(session, "samples")
       
-      
+  print("extract")    
     }
     })
  
@@ -2199,7 +2261,10 @@ input.tsp=='overview' ||
     })
   
   output$overview_table <-
+   
+          
     renderText({
+      if (input$dataset != ""){
       paste(
         "</br><div class='panel panel-default'>
         <div class='panel-heading'>Table description</div>
@@ -2217,6 +2282,8 @@ input.tsp=='overview' ||
         " are shown. p-value(s) as: one star for value below 0.05, two for 0.01 and three for 0.001. Table generated with eden <span class='label label-default'>v. 0.1.0</span>",
         "</div></div>"
       )
+      } 
+ 
     })
   
   
@@ -2237,18 +2304,23 @@ input.tsp=='overview' ||
   
   output$annotation_figure <-
     renderText({
-      paste(
-        
-        "</br><div class='panel panel-default'>
+      
+      if (input$dataset != ""){
+        paste(
+          
+          "</br><div class='panel panel-default'>
         <div class='panel-heading'>Figure description</div>
         <div class='panel-body'>",
+          
+          "Number of protein families found in <span class='badge'>",
+          length(input$samples),
+          "</span> samples for each category. Only protein families with a FDR adjusted p-value of less than <span class='badge'>",
+          input$pval,
+          "</span> are shown. Figure generated with eden <span class='label label-default'>v. 0.1.0</span></div>"
+        )
         
-        "Number of protein families found in <span class='badge'>",
-        length(input$samples),
-        "</span> samples for each category. Only protein families with a FDR adjusted p-value of less than <span class='badge'>",
-        input$pval,
-        "</span> are shown. Figure generated with eden <span class='label label-default'>v. 0.1.0</span></div>"
-      )
+      }
+     
     })
   
   # tab 3
