@@ -114,7 +114,7 @@ Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
 
 
 ########## dashboard header ##########
-dbHeader <- dashboardHeader(titleWidth=200,
+dbHeader <- dashboardHeader( titleWidth=200,
                             
                             # Set height of dashboardHeader
                             tags$li(class = "dropdown",
@@ -129,7 +129,7 @@ dbHeader$children[[2]]$children <-  tags$a(href='',
                                            tags$img(src='logo.png',height='47',width='115'))
 
 
-dashboardPage(skin = "blue",
+dashboardPage(skin = "black",
   dbHeader, 
 
   ########## dashboard sidebar ##########
@@ -140,12 +140,14 @@ dashboardPage(skin = "blue",
       icon = icon("dashboard")
     ),
     menuItem("Start new job", tabName = "newjob", icon = icon("road"),  badgeLabel = textOutput("text3"), badgeColor = "green"),
-    menuItem("Show job", tabName = "showjob", icon = icon("pie-chart"),  badgeLabel = textOutput("samplesnum"), badgeColor = "green"),
+    menuItem("Visualize job", tabName = "showjob", icon = icon("pie-chart"),  badgeLabel = textOutput("samplesnum"), badgeColor = "green"),
     conditionalPanel(
       condition = "input.sid == 'showjob'",
       uiOutput("main_ui")
     ),
     menuItem("View log", tabName = "log", icon = icon("binoculars", lib = "font-awesome" )),  
+    menuItem("Get example files", icon = icon("file-archive-o", lib =  "font-awesome"),
+             href = "https://github.com/philippmuench/eden/samplefiles.zip"),
     menuItem("Developer", tabName = "developer", icon = icon("cogs",  lib = "font-awesome")),
     menuItem("Bug Reports", icon = icon("bug"),
              href = "https://github.com/philippmuench/eden/issues"),
@@ -156,7 +158,13 @@ dashboardPage(skin = "blue",
   ),
   
   ########## dashboard body ##########
-  dashboardBody( useShinyjs(),tabItems(
+  dashboardBody( useShinyjs(),
+                 
+                 tags$head(
+                   tags$link(rel = "stylesheet", type = "text/css", href = "edentheme.css")
+                 ),
+                 
+                 tabItems(
     tabItem(tabName = "dashboard",
             fluidRow(
               infoBoxOutput("lockfileBox")
@@ -258,6 +266,12 @@ dashboardPage(skin = "blue",
                        condition = "input.tsp=='overview'",
                        downloadButton("dlTable", "Download filtered table")
                      ),
+                   
+             #      # barplot download
+            #       conditionalPanel(
+            #         condition = "input.tsp=='overview'",
+            #         downloadButton("dlRaw", "Download selected raw files")
+            #       ),
                      
                   # barplot download
                    conditionalPanel(

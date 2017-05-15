@@ -17,9 +17,6 @@ shinyServer(function(input, output, session) {
     )
   )
   
-  output$text3 <- renderText({ 
-    status$serverstatus
-  })
   
   output$samplesnum <- renderText({ 
     status$samplesnumber <- length(list.dirs(csv.path))
@@ -189,18 +186,20 @@ shinyServer(function(input, output, session) {
        last_event <- data[nrow(data),]$message # current message
        if (last_event == "error") {
          status$eden_error <- TRUE
+         last_error <- last_event
          status$serverstatus <- "error"
        } else if (last_event == "finished") {
          status$eden_finished <- TRUE
        }
      }
-      output$logtable = renderText({
+      output$logtable = renderTable({
         if(file.exists(log.path) & file.info(log.path)$size >0){
           logtable <- read.csv2(log.path, header=F)
           colnames(logtable) <- c("type", "time", "message")
-    #      logtable.rev <- apply(as.data.frame(logtable), 2, rev)  # reverse
+          logtable.rev <- apply(as.data.frame(logtable), 2, rev)  # reverse
           last_event <- as.character( data[nrow(data),]$message) # current message
-          print(last_event) 
+       print(logtable.rev)
+          #  print(last_event) 
         } else {
           # either there is no log file at all or the log file is without content
           return(NULL)
@@ -255,7 +254,7 @@ shinyServer(function(input, output, session) {
   output$startError <- renderUI({
  #   iconName <- "remove"
 #    icon(iconName, lib = "glyphicon")
-    paste0("Missing input data")
+    paste0("Missing input data! Please check boxes with a 'x' sign and provide necessary informations")
   })
   
   
@@ -606,7 +605,7 @@ shinyServer(function(input, output, session) {
       textInput(
         "eden_run_name",
         labelMandatory("give your analysis a unique name"),
-        value = "eden_run_1"
+        value = paste0("run_", Sys.Date())
       ),
       #  textInput("eden_run_cpus", label = "number of CPUs used for analysis", value = "4"),
       numericInput("eden_run_cpus", label = "number of CPUs", value = 4),
@@ -773,6 +772,7 @@ shinyServer(function(input, output, session) {
   
   # delete files on button press
   observeEvent(input$deletefiles, {
+  
     status$serverstatus <- "ready"
     status$samplesnumber <- 0
     # reset number of uploaded files to zero
@@ -877,6 +877,7 @@ shinyServer(function(input, output, session) {
   
   # use observe event to check if button pressed
   observeEvent(input$checkButton, {
+    status$serverstatus <- "running"
     #  file.create(lock.file)
     shinyjs::disable("checkButton")
     shinyjs::disable("deletefiles")
@@ -911,13 +912,12 @@ shinyServer(function(input, output, session) {
   
   # Function to update my_data
   update_log <- function() {
-   # print("nothing")
     my_log <<- get_new_log()
     internal_check <<- check_new_file()
   }
   
   output$log = renderText({
-    invalidateLater(millis = 2000, session)
+    invalidateLater(millis = 3000, session)
     update_log()
     NULL
   })
@@ -1165,6 +1165,19 @@ shinyServer(function(input, output, session) {
     }
   })
   
+  
+  
+  observe({
+    output$text3 <- renderText(status$serverstatus)
+  })
+  
+  
+  
+  #output$text3 <- renderText({ 
+  #  status$serverstatus
+  #})
+  
+  
   # sample hmm status
   observeEvent(input$radio, {
     if (input$radio == 2){
@@ -1213,13 +1226,30 @@ status$dataset <- input$dataset
   # enable buttons if eden finished and cleanup
   observe({
     if (status$eden_finished){
+      
+        # extract and update boxes
+          withProgress(message = 'Extract files, please wait', value = 0, {
+            extractTar(tar.path, raw.path, csv.path, progress=TRUE)
+          })
+         updateSelectInput(session,
+                            "dataset",  label = "Select run", choices = list.files(
+                              path = csv.path,
+                              full.names = FALSE,
+                              recursive = FALSE
+                            )
+          )
+         updateSelectInput(session, "samples")
+      
+      # inform user
       showModal(modalDialog(
         title = "Eden run finished!",
-        "To inspect the results go to the Dashboard tab",
+        "You can now inspect the results on the 'Visualize job' tab.",
         easyClose = TRUE,
         footer = NULL
       ))
-      
+      # reset variables
+      status$eden_finished <- FALSE
+      status$serverstatus <- "finished"
       shinyjs::enable("checkButton")
      shinyjs::enable("deletefiles")
       status$filespassed <- FALSE
@@ -1277,7 +1307,7 @@ status$dataset <- input$dataset
     if (status$eden_error){
       showModal(modalDialog(
         title = "An error occured!",
-        "todo",
+        paste0("Error: ", last_error, " Please repeat the analysis or contact pmu15@helmholtz-hzi.de"),
         easyClose = TRUE,
         footer = NULL
       ))
@@ -2108,7 +2138,7 @@ input.tsp=='overview' ||
       paste("</br><font color=\"#4db898\"><b>Welcome to eden!</b></br></font>",
             "Eden is a fast implementation of the widely used method for the detection of protein families that are under positive selection based on the ratio of amino acid replacement versus silent substitution rates (dN/dS) that can applied an large metagenomic samples.",
             "</br></br>", "<font color=\"#4db898\"><b>About the examples</b></br></font>", 
-            "On the left panel you can select example datasets we have computed for you. In the bodysites example we used over 60 metagenomic samples from healthy individuals from the Human Microbiome Project. In a second example named bmi.tar we analyzed over 50 metagenomic samples from the gut of lean, overwight and obese individuals.</br></br>"
+            "On the left panel you can visualize pre-computed dataset under the 'Visualize job' panel. In the 'bodysites.tar' example we used >60 metagenomic samples from healthy individuals from the Human Microbiome Project. In a second example named 'bmi.tar' we analyzed over 50 metagenomic samples from the gut of lean, overwight and obese individuals.</br></br>"
             
       )
       
@@ -2117,12 +2147,12 @@ input.tsp=='overview' ||
   output$lockfileBox <- renderInfoBox({
     if(file.exists(lock.file)){
       infoBox(
-        "lockfile","process running", icon = icon("list"),
+        "Server busy","we detected that a eden process in running in the background.", icon = icon("list"),
         color = "red"
       )    
     } else {
       infoBox(
-        "no lockfile","no process running", icon = icon("list"),
+        "Server ready","You can submit a new job.", icon = icon("list"),
         color = "green"
       )
     }
@@ -2146,26 +2176,25 @@ input.tsp=='overview' ||
       #  loadtar(),
       
         # automatically imported here
-#        actionButton('reloadButton2', label = "import files"), 
-    #    easyClose = TRUE,
+    #    actionButton('reloadButton2', label = "import files"), 
+    #   easyClose = TRUE,
     #    footer = NULL
     #  ))
 
-  #    withProgress(message = 'Extract files, please wait', value = 0, {
-  #      extractTar(tar.path, raw.path, csv.path, progress=TRUE)
-  #    })
+      withProgress(message = 'Extract files, please wait', value = 0, {
+        extractTar(tar.path, raw.path, csv.path, progress=TRUE)
+      })
       
-  #    updateSelectInput(session,
-  #                      "dataset",  label = "Select run", choices = list.files(
-  #                        path = csv.path,
-  #                        full.names = FALSE,
-  #                        recursive = FALSE
-  #                      )
-  #    )
+      updateSelectInput(session,
+                        "dataset",  label = "Select run", choices = list.files(
+                          path = csv.path,
+                          full.names = FALSE,
+                          recursive = FALSE
+                        )
+      )
       
-   #   updateSelectInput(session, "samples")
+      updateSelectInput(session, "samples")
       
-  print("extract")    
     }
     })
  
@@ -2377,6 +2406,23 @@ input.tsp=='overview' ||
       write.csv(downloadObj, file)
     }
   )
+  
+  # download raw files
+#  output$dlRaw <- downloadHandler(
+#    fname = "raw.zip",
+#    content = function(fname) {
+#      fs <- c()
+#      tmpdir <- tempdir()
+#      setwd(tempdir())
+#      for (i in c(1,2,3,4,5)) {
+#        path <- paste0("sample_", i, ".csv")
+#        fs <- c(fs, path)
+#        write(i*2, path)
+#      }
+#      zip(zipfile=fname, files=fs)
+#    },
+#    contentType = "application/zip"
+#  )
   
   # download histogram
   output$dlCurPlot <- downloadHandler(
