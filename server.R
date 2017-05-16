@@ -165,9 +165,9 @@ shinyServer(function(input, output, session) {
 
   # function that checks if there are new tar files in the tar.path that have not folder in csv folder
   check_new_file <- function(){
-    csvs <- list.dirs(csv.path, recursive = F, full.names = F)
+    raws <- list.dirs(raw.path, recursive = F, full.names = F)
     tars <- list.files(tar.path, recursive = F, full.names = F)
-    if (!identical(csvs, tars)){
+    if (!identical(raws, tars)){
       status$newfiles <- TRUE
     } else {
       status$newfiles <- FALSE
@@ -385,12 +385,8 @@ shinyServer(function(input, output, session) {
                          updateRadioButtons(session, "intype",
                                             selected = "fasta"
                          )
-                         
-                         
-                         
+          
         )
-        
-        
       }
       
     } else {
@@ -406,14 +402,11 @@ shinyServer(function(input, output, session) {
             width = '100%'
           ),
           htmlOutput("upload_response")
-          
-          
-          
+
         )
       } else {
         conditionalPanel(condition = "input.tsp=='tab1'",
                          #htmlOutput("warning3"),
-                         
                          showModal(modalDialog(
                            title = "Warning",
                            "You already have ORF files uploaded. If you want to use fasta instead please click the 'reset button' first.",
@@ -424,11 +417,7 @@ shinyServer(function(input, output, session) {
                                             selected = "orf"
                          )
         )
-        
-        
       }
-      
-      
     }
   })
   
@@ -456,27 +445,65 @@ shinyServer(function(input, output, session) {
     if (is.null(input$files_fasta))
       return(NULL)
     else {
-      status$filespassed <- TRUE
-      infiles_fasta1 <- as.data.frame(input$files_fasta)
-      infiles_fasta1$dest <-
-        paste(fasta.path, infiles_fasta1$name, sep = "/")
-      for (i in 1:nrow(infiles_fasta1)) {
-        cmd <-
-          paste("mv ",
-                infiles_fasta1$datapath[i],
-                " ",
-                infiles_fasta1$dest[i],
-                sep = "")
-        err <- system(cmd,  intern = TRUE)
+      # check if the files have the right ending
+      files <- input$files_fasta
+      if(all(file_ext(files$name) =="fasta")){
+    
+        # check if we can read the fasta files
+        # load all as DNAStringset and raise error if they have no sequences
+        passed <- TRUE
+       for (i in 1:nrow(files)){
+         testload <- 
+         if(length(readDNAStringSet(files$datapath[1])) < 1){
+           passed <- FALSE
+         }
+       }
+        
+        if (passed){
+          status$filespassed <- TRUE
+          infiles_fasta1 <- as.data.frame(input$files_fasta)
+          infiles_fasta1$dest <-
+            paste(fasta.path, infiles_fasta1$name, sep = "/")
+          for (i in 1:nrow(infiles_fasta1)) {
+            cmd <-
+              paste("mv ",
+                    infiles_fasta1$datapath[i],
+                    " ",
+                    infiles_fasta1$dest[i],
+                    sep = "")
+            err <- system(cmd,  intern = TRUE)
+          }
+          out <- paste(err)
+          #    system2("echo",
+          #            paste('";;fasta files added" >> ', log.path, sep = ""))
+          status$fasta <- TRUE
+          status$files <- list.files(path =  fasta.path,
+                                     full.names = FALSE,
+                                     recursive = FALSE)
+          status$num_fasta <- length(status$files)
+          
+          
+        } else {
+          showModal(modalDialog(
+            title = "Please check fasta files",
+            "Seems that a fasta files is not in the FASTA format (or empty). Please check input files and try again.",
+            easyClose = TRUE,
+            footer = NULL
+          ))
+          
+        }
+
+                
+      } else {
+        # not all files have "fasta" ending
+        showModal(modalDialog(
+          title = "Please check file ending",
+          "Currenlty only files with the '.fasta' ending are supported.",
+          easyClose = TRUE,
+          footer = NULL
+        ))
       }
-      out <- paste(err)
-  #    system2("echo",
-  #            paste('";;fasta files added" >> ', log.path, sep = ""))
-      status$fasta <- TRUE
-      status$files <- list.files(path =  fasta.path,
-                                 full.names = FALSE,
-                                 recursive = FALSE)
-      status$num_fasta <- length(status$files)
+    
       
     }
     return(NULL)
@@ -486,37 +513,79 @@ shinyServer(function(input, output, session) {
     if (is.null(input$files_faa))
       return(NULL)
     else {
-      infiles_faa <- as.data.frame(input$files_faa)
       
-      infiles_faa$dest <-
-        paste(faa.path, infiles_faa$name, sep = "/")
-      for (i in 1:nrow(infiles_faa)) {
-        cmd <-
-          paste("mv ",
-                infiles_faa$datapath[i],
-                " ",
-                infiles_faa$dest[i],
-                sep = "")
-        err <- system(cmd,  intern = TRUE)
-      }
-      out <- paste(err)
-  #    system2("echo", paste('";;faa files added" >> ', log.path, sep = ""))
-      status$faa <- TRUE
-      status$files <- list.files(path =  faa.path,
-                                 full.names = FALSE,
-                                 recursive = FALSE)
-      status$faa_files <- list.files(path =  faa.path,
+      files <- input$files_faa
+      if(all(file_ext(files$name) =="faa")){
+        
+        
+        
+        # check if we can read the fasta files
+        # load all as DNAStringset and raise error if they have no sequences
+        passed <- TRUE
+        for (i in 1:nrow(files)){
+          testload <- 
+            if(length(readDNAStringSet(files$datapath[1])) < 1){
+              passed <- FALSE
+            }
+        }
+        
+        if(passed){
+          
+          
+          infiles_faa <- as.data.frame(input$files_faa)
+          
+          infiles_faa$dest <-
+            paste(faa.path, infiles_faa$name, sep = "/")
+          for (i in 1:nrow(infiles_faa)) {
+            cmd <-
+              paste("mv ",
+                    infiles_faa$datapath[i],
+                    " ",
+                    infiles_faa$dest[i],
+                    sep = "")
+            err <- system(cmd,  intern = TRUE)
+          }
+          out <- paste(err)
+          #    system2("echo", paste('";;faa files added" >> ', log.path, sep = ""))
+          status$faa <- TRUE
+          status$files <- list.files(path =  faa.path,
                                      full.names = FALSE,
                                      recursive = FALSE)
-      
-      status$num_faa <- length(status$faa_files)
-      if (length(status$ffn_files) > 0) {
-        #compare faa and ffn names
-        status$filespassed <- TRUE
-      }
-      return(NULL)
-    }
+          status$faa_files <- list.files(path =  faa.path,
+                                         full.names = FALSE,
+                                         recursive = FALSE)
+          
+          status$num_faa <- length(status$faa_files)
+          if (length(status$ffn_files) > 0) {
+            #compare faa and ffn names
+            status$filespassed <- TRUE
+          }
+          return(NULL)
+          
+        } else {
+          
+          showModal(modalDialog(
+            title = "Please check input files",
+            "Seems that one of the files is not in the FASTA format or empty.",
+            easyClose = TRUE,
+            footer = NULL
+          ))
+          
+        }
+     
     
+    } else {
+      showModal(modalDialog(
+        title = "Please check file ending",
+        "Currenlty only files with the '.faa' ending are supported.",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+      
+      
+      
+    }
+    }
     
     
   })
@@ -528,6 +597,10 @@ shinyServer(function(input, output, session) {
     else{
       # process ffn
       status$hmmpassed <- TRUE
+      files <- input$files_faa
+      if(all(file_ext(files$name) =="HMM")){
+        
+      
       hmmfile <- as.data.frame(input$hmmfile)
       hmmfile$dest <- hmm.path
       cmd <-
@@ -538,6 +611,16 @@ shinyServer(function(input, output, session) {
       status$num_hmm <- 1
       
       return(NULL)
+      } else {
+        
+        showModal(modalDialog(
+          title = "Please check file ending",
+          "Currenlty only files with the '.HMM' ending are supported.",
+          easyClose = TRUE,
+          footer = NULL
+        ))
+        
+      }
     }
   })
   
@@ -548,7 +631,26 @@ shinyServer(function(input, output, session) {
       return(NULL)
     else {
       infiles_ffn <- as.data.frame(input$files_ffn)
-      
+
+      # check input files if they have the right ending
+      files <- input$files_ffn
+      if(all(file_ext(files$name) =="faa")){
+            
+        
+        
+        # check if we can read the fasta files
+        # load all as DNAStringset and raise error if they have no sequences
+        passed <- TRUE
+        for (i in 1:nrow(files)){
+          testload <- 
+            if(length(readDNAStringSet(files$datapath[1])) < 1){
+              passed <- FALSE
+            }
+        }
+        
+        if(passed){
+          
+          
       infiles_ffn$dest <-
         paste(ffn.path, infiles_ffn$name, sep = "/")
       for (i in 1:nrow(infiles_ffn)) {
@@ -574,8 +676,27 @@ shinyServer(function(input, output, session) {
         status$filespassed <- TRUE
       }
       return(NULL)
+      
+        } else {
+          showModal(modalDialog(
+            title = "Please check input file",
+            "Seems that some files are in the wrong format or empty.",
+            easyClose = TRUE,
+            footer = NULL
+          ))
+          
+        }
+    } else {
+      
+      showModal(modalDialog(
+        title = "Please check file ending",
+        "Currenlty only files with the '.ffn' ending are supported.",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+      
     }
-    
+    }
   })
   
   
@@ -1226,19 +1347,19 @@ status$dataset <- input$dataset
   # enable buttons if eden finished and cleanup
   observe({
     if (status$eden_finished){
-      
+#      Sys.sleep(1)
         # extract and update boxes
-          withProgress(message = 'Extract files, please wait', value = 0, {
-            extractTar(tar.path, raw.path, csv.path, progress=TRUE)
-          })
-         updateSelectInput(session,
-                            "dataset",  label = "Select run", choices = list.files(
-                              path = csv.path,
-                              full.names = FALSE,
-                              recursive = FALSE
-                            )
-          )
-         updateSelectInput(session, "samples")
+#          withProgress(message = 'Extract files, please wait', value = 0, {
+#            extractTar(tar.path, raw.path, csv.path, progress=TRUE)
+#          })
+#         updateSelectInput(session,
+ #                           "dataset",  label = "Select run", choices = list.files(
+#                              path = csv.path,
+#                              full.names = FALSE,
+#                              recursive = FALSE
+#                            )
+#          )
+#         updateSelectInput(session, "samples")
       
       # inform user
       showModal(modalDialog(
@@ -1247,8 +1368,11 @@ status$dataset <- input$dataset
         easyClose = TRUE,
         footer = NULL
       ))
+      
+      system2("echo", paste('"internal;;update ui\n" >> ', log.path, sep = ""))
       # reset variables
       status$eden_finished <- FALSE
+   #   last_log <- "eden updated"
       status$serverstatus <- "finished"
       shinyjs::enable("checkButton")
      shinyjs::enable("deletefiles")
@@ -1728,7 +1852,6 @@ input.tsp=='overview' ||
         )
       }
     }
-    
     do.call(grid.arrange, p)
     return(p)
   }
@@ -1821,7 +1944,6 @@ input.tsp=='overview' ||
     if (input$bysamplefacet) {
       p <- p + facet_wrap( ~ sample)
     }
-    
     return(p)
   }
   
@@ -1843,7 +1965,6 @@ input.tsp=='overview' ||
       mark.ratio <- data[input$table_rows_selected, ]$ratio
       p <- p + geom_hline(yintercept = mean(mark.ratio, na.rm = T))
     }
-    
     return(p)
   }
   
@@ -1989,7 +2110,16 @@ input.tsp=='overview' ||
       s = input$table_rows_selected
       if (length(s)) {
         data.selection <<- data[input$table_rows_selected,]
+      
+  #     fams <- print(data.selection$name)
+  #     for(fam in fams){
+  #       input$sample 
+  #       dnds_path <- paste0(raw.path, "/",input$dataset,"/", fams)
+  #       
+  #     }
+   
         
+        dnds_files <- data[input$table_rows_selected,]
         test.mat <-
           matrix(c(
             round(sum(data.selection$sum_pN)),
@@ -2018,7 +2148,9 @@ input.tsp=='overview' ||
           "+-",
           round(sd(data.selection$ratio, na.rm=TRUE), digits = 3) ,
           "(SD) </span></br> p-value (one-sided):  <span class='badge'>", round(pval, digits = 5),"</span>"
-        )
+  
+        
+                )
       } else {
         
         paste(
@@ -2180,10 +2312,11 @@ input.tsp=='overview' ||
     #   easyClose = TRUE,
     #    footer = NULL
     #  ))
-
+      Sys.sleep(1) # make sure the tar file is loading complete by waiting
       withProgress(message = 'Extract files, please wait', value = 0, {
         extractTar(tar.path, raw.path, csv.path, progress=TRUE)
       })
+      
       
       updateSelectInput(session,
                         "dataset",  label = "Select run", choices = list.files(
@@ -2408,21 +2541,24 @@ input.tsp=='overview' ||
   )
   
   # download raw files
-#  output$dlRaw <- downloadHandler(
-#    fname = "raw.zip",
-#    content = function(fname) {
-#      fs <- c()
-#      tmpdir <- tempdir()
-#      setwd(tempdir())
-#      for (i in c(1,2,3,4,5)) {
-#        path <- paste0("sample_", i, ".csv")
-#        fs <- c(fs, path)
-#        write(i*2, path)
-#      }
-#      zip(zipfile=fname, files=fs)
-#    },
-#    contentType = "application/zip"
-#  )
+  output$dlRaw <- renderText (
+    
+    # move raw files from selected rows to folder 
+   print(input$table_rows_selected)
+
+  #      filename = 'pdfs.zip',
+  #  content = function(fname) {
+     
+  #    fs <- c("rock.csv", "pressure.csv", "cars.csv")
+  #    write.csv(datasetInput()$rock, file = "rock.csv", sep =",")
+  #    write.csv(datasetInput()$pressure, file = "pressure.csv", sep =",")
+  #    write.csv(datasetInput()$cars, file = "cars.csv", sep =",")
+  #    print (fs)
+  #    
+  #    zip(zipfile=fname, files=fs)
+  #  },
+#  contentType = "application/zip"
+  )
   
   # download histogram
   output$dlCurPlot <- downloadHandler(

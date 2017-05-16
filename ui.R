@@ -8,6 +8,7 @@ library(data.table)
 library(DT)
 library(zoo)
 library(pander)
+library(Biostrings)
 source("functions.R")
 
 ########## startup settings ##########
@@ -18,15 +19,9 @@ if (file.exists("/home/eden/eden.sh")) {
   tar.path <<- "/home/eden/data/tar" # folder where .tar files are located (eden output)
   raw.path <<- "/home/eden/data/raw" # folder where unpacked .tar files are located
   annotation.path <<- "/home/eden/tigr_data" # folder werhere TIGR_ROLE_NAMES and TIGRFAMS_ROLE_LINK are located
-
-    dir.create(csv.path)
-  
-    dir.create(raw.path)
-
-    
-    dir.create(tar.path)
-
-
+  dir.create(csv.path)
+  dir.create(raw.path)
+  dir.create(tar.path)
 
 } else {
   # we are online hosted
@@ -147,7 +142,7 @@ dashboardPage(skin = "black",
     ),
     menuItem("View log", tabName = "log", icon = icon("binoculars", lib = "font-awesome" )),  
     menuItem("Get example files", icon = icon("file-archive-o", lib =  "font-awesome"),
-             href = "https://github.com/philippmuench/eden/samplefiles.zip"),
+             href = 'https://www.dropbox.com/s/pd7tj6ztua2s3ma/sample_files.zip?dl=1'),
     menuItem("Developer", tabName = "developer", icon = icon("cogs",  lib = "font-awesome")),
     menuItem("Bug Reports", icon = icon("bug"),
              href = "https://github.com/philippmuench/eden/issues"),
@@ -166,9 +161,9 @@ dashboardPage(skin = "black",
                  
                  tabItems(
     tabItem(tabName = "dashboard",
-            fluidRow(
-              infoBoxOutput("lockfileBox")
-            ),
+   #         fluidRow(
+  #            infoBoxOutput("lockfileBox")
+  #          ),
             fluidRow(column(width=12,
               htmlOutput("welcome")),
               htmlOutput("statusfinished"),
@@ -206,7 +201,7 @@ dashboardPage(skin = "black",
               useShinyjs(),
       
               box( id ="figurebox", title = "Figures and tables", status = "primary", solidHeader=  T, width = 12,
-                tabsetPanel(
+                tabsetPanel(id = "tsp",
                   tabPanel(
                     "Overview",
                     div(DT::dataTableOutput("table"), style = "font-size:80%"),
@@ -254,8 +249,8 @@ dashboardPage(skin = "black",
                     div(DT::dataTableOutput("table_sample"), style = "font-size:80%"),
                     
                     value = "box"
-                  ),
-                  id = "tsp"
+                  )
+                 
                 )
               ),
           
@@ -267,11 +262,11 @@ dashboardPage(skin = "black",
                        downloadButton("dlTable", "Download filtered table")
                      ),
                    
-             #      # barplot download
-            #       conditionalPanel(
-            #         condition = "input.tsp=='overview'",
-            #         downloadButton("dlRaw", "Download selected raw files")
-            #       ),
+                  # barplot download
+                   conditionalPanel(
+                     condition = "input.tsp=='overview'",
+                     renderText("dlRaw")
+                   ),
                      
                   # barplot download
                    conditionalPanel(

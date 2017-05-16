@@ -23,35 +23,65 @@ extractTar <- function(in.path, out.path, csv.path, progress=FALSE) {
     for (i in 1:length(tars)) {
       # unpack
       if(progress){
-        incProgress(i/length(tars), detail = paste("extract", tars[i]))
+        incProgress(i/length(tars), detail = paste("processing", tars[i]))
       }
+      #check if samples already extracted
+      if(!dir.exists(paste0("csv/", tars[i]))){
+        
       #print(paste("untar", tars[i]))
       untar(paste(in.path, tars[i], sep = "/"),
             exdir = paste(out.path, "/", tars[i], sep = ""))
+  
+      # samples per tar files
       samples <-
         list.files(
           path = paste(out.path, "/", tars[i], sep = ""),
           full.names = FALSE,
           recursive = FALSE
         )
-      for (sample in samples) {
-        mat <-
-          fisher_test(load_dnds(
-            in_folder = paste(out.path, "/", tars[i], "/", sample, "/dnds/", sep = ""),
-            gap_folder = paste(out.path, "/", tars[i], "/", sample, "/gap/", sep =
-                                 "")
-          ))
-        dir.create(paste(csv.path, "/", tars[i], sep = ""))
-        # write csv file
-        write.table(
-          mat,
-          file = paste(csv.path, "/", tars[i], "/", sample, ".csv", sep = ""),
-          quote = F,
-          sep = ";",
-          row.names = F
+      dnds_there <- TRUE
+      # check if we have for all samples dnds calculations
+      for(sample in samples){
+        dnds_list <- list.files(
+          path = paste(out.path, "/",tars[i],  "/",sample, "/dnds/", sep = ""),
+          full.names = FALSE,
+          recursive = FALSE
         )
-        no_tar <<- FALSE
+        if (length(dnds_list)<1) {
+          dnds_there <- FALSE
+        }
       }
+      
+      if (length(samples >0) && dnds_there){
+        for (sample in samples) {
+          mat <-
+            fisher_test(load_dnds(
+              in_folder = paste(out.path, "/", tars[i], "/", sample, "/dnds/", sep = ""),
+              gap_folder = paste(out.path, "/", tars[i], "/", sample, "/gap/", sep =
+                                   "")
+            ))
+          dir.create(paste(csv.path, "/", tars[i], sep = ""))
+          # write csv file
+          write.table(
+            mat,
+            file = paste(csv.path, "/", tars[i], "/", sample, ".csv", sep = ""),
+            quote = F,
+            sep = ";",
+            row.names = F
+          )
+          no_tar <<- FALSE
+        }
+      } else {
+        print("dnds_file is missing")
+      }
+      
+      
+      } else {
+        print("tar already extracted")
+        
+      }
+      
+      
     }
   }
   else {
