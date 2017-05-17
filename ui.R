@@ -22,17 +22,17 @@ if (file.exists("/home/eden/eden.sh")) {
   dir.create(csv.path)
   dir.create(raw.path)
   dir.create(tar.path)
+  dir.create(down.path)
 
 } else {
   # we are online hosted
   csv.path <<- "csv"
   tar.path <<- "tar"
   raw.path <<- "raw"
-
+  down.path <<- "eden_files"
    dir.create(csv.path)
-  
   dir.create(raw.path)
-
+  dir.create(down.path)
   annotation.path <<- "annotation"
 }
 
@@ -265,7 +265,7 @@ dashboardPage(skin = "black",
                   # barplot download
                    conditionalPanel(
                      condition = "input.tsp=='overview'",
-                     renderText("dlRaw")
+                     downloadButton("dlRaw")
                    ),
                      
                   # barplot download

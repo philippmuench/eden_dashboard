@@ -2110,13 +2110,22 @@ input.tsp=='overview' ||
       s = input$table_rows_selected
       if (length(s)) {
         data.selection <<- data[input$table_rows_selected,]
+    
+       fams <- print(data.selection$name)
+       for(fam in fams){
+         input$sample 
+        
+      # move selected families to tmp folder that they can downloaded on button press
+      dnds_path <- paste0(raw.path, "/",input$dataset,"/", input$samples[1] ,"/dnds/",fams,".txt.DnDsRatio.txt")
+      tree_path <- paste0(raw.path, "/",input$dataset,"/", input$samples[1] ,"/tree/",fams,".ffn.txt")
+      codon_path <- paste0(raw.path, "/",input$dataset,"/", input$samples[1] ,"/codon/",fams,".msa")
+      print("copy files")
+      do.call(file.remove, list(list.files(down.path, full.names = TRUE)))
+      file.copy(dnds_path, paste0(down.path, "/", input$dataset,"-", input$samples[1],"-",fams, ".dnds.txt"))
+      file.copy(tree_path, paste0(down.path, "/", input$dataset,"-", input$samples[1],"-",fams, ".tree.phy"))
+      file.copy(codon_path, paste0(down.path, "/", input$dataset,"-", input$samples[1],"-",fams, ".codon.msa"))
       
-  #     fams <- print(data.selection$name)
-  #     for(fam in fams){
-  #       input$sample 
-  #       dnds_path <- paste0(raw.path, "/",input$dataset,"/", fams)
-  #       
-  #     }
+       }
    
         
         dnds_files <- data[input$table_rows_selected,]
@@ -2541,24 +2550,19 @@ input.tsp=='overview' ||
   )
   
   # download raw files
-  output$dlRaw <- renderText (
-    
-    # move raw files from selected rows to folder 
-   print(input$table_rows_selected)
-
-  #      filename = 'pdfs.zip',
-  #  content = function(fname) {
-     
-  #    fs <- c("rock.csv", "pressure.csv", "cars.csv")
-  #    write.csv(datasetInput()$rock, file = "rock.csv", sep =",")
-  #    write.csv(datasetInput()$pressure, file = "pressure.csv", sep =",")
-  #    write.csv(datasetInput()$cars, file = "cars.csv", sep =",")
-  #    print (fs)
-  #    
-  #    zip(zipfile=fname, files=fs)
-  #  },
-#  contentType = "application/zip"
+  output$dlRaw <- downloadHandler(
+    filename = function() {
+      paste("data-", Sys.Date(), ".zip", sep="")
+    },
+   content <- function(file) {
+     files2zip <- dir(down.path, full.names = TRUE)
+     zip(zipfile = 'out', files = files2zip)
+    file.copy("out.zip", file)
+    },
+    contentType = "application/zip"
   )
+  
+  
   
   # download histogram
   output$dlCurPlot <- downloadHandler(
