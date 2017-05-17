@@ -345,8 +345,10 @@ shinyServer(function(input, output, session) {
   output$upload_ui_head_a <- renderUI({
     if (input$intype == 'orf') {
       if (status$num_fasta == 0) {
-        conditionalPanel(condition = "status$isready==TRUE",
-                         fluidRow(column(
+    #    conditionalPanel(condition = "status.isready==TRUE",
+
+        tagList(
+          fluidRow(column(
                            5,
                            fileInput3(
                              'files_faa',
@@ -372,7 +374,7 @@ shinyServer(function(input, output, session) {
                            htmlOutput("upload_response_ffn")
                          )))
       } else {
-        conditionalPanel(condition = "input.tsp=='tab1'",
+        conditionalPanel(condition = "status.isready==TRUE",
                          #   htmlOutput("warning2"), 
                          
                          
@@ -392,7 +394,7 @@ shinyServer(function(input, output, session) {
     } else {
       if (status$num_faa == 0 & status$num_ffn == 0) {
         conditionalPanel(
-          condition = "input.tsp=='tab1'",
+          condition = "status.isready==TRUE",
           
           fileInput3(
             'files_fasta',
@@ -405,7 +407,7 @@ shinyServer(function(input, output, session) {
 
         )
       } else {
-        conditionalPanel(condition = "input.tsp=='tab1'",
+        conditionalPanel(condition = "status.isready==TRUE",
                          #htmlOutput("warning3"),
                          showModal(modalDialog(
                            title = "Warning",
@@ -423,8 +425,9 @@ shinyServer(function(input, output, session) {
   
   ### ui head part
   output$upload_ui_head <- renderUI({
-    conditionalPanel(
-      condition = "status.isready==TRUE",
+   # conditionalPanel(
+    #  condition = "status.isready==TRUE",
+    tagList(
       helpText(
         "Specify input file format. You can either upload .faa and .ffn files of open reading frames (ORF) or the nucleotide .fasta file (in this case the ORFs will be predicted inside the pipeline). Fields marked with * have to be provided."
       ),
@@ -447,17 +450,24 @@ shinyServer(function(input, output, session) {
     else {
       # check if the files have the right ending
       files <- input$files_fasta
-      if(all(file_ext(files$name) =="fasta")){
+     if(all(file_ext(files$name) =="fasta")){
     
         # check if we can read the fasta files
-        # load all as DNAStringset and raise error if they have no sequences
+        # load all as read.fasta and raise error if they have no sequences
         passed <- TRUE
+        withProgress(message = 'Checking files, please wait', value = 0,  {
+          
        for (i in 1:nrow(files)){
+           
+           
          testload <- 
-         if(length(readDNAStringSet(files$datapath[1])) < 1){
-           passed <- FALSE
+         if(length(read.fasta(files$datapath[1])) < 1){
+          passed <- FALSE
+          
          }
-       }
+         incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
+         }
+       })
         
         if (passed){
           status$filespassed <- TRUE
@@ -520,14 +530,17 @@ shinyServer(function(input, output, session) {
         
         
         # check if we can read the fasta files
-        # load all as DNAStringset and raise error if they have no sequences
+        # load all as read.fasta and raise error if they have no sequences
         passed <- TRUE
+        withProgress(message = 'Checking files, please wait', value = 0,  {
         for (i in 1:nrow(files)){
           testload <- 
-            if(length(readDNAStringSet(files$datapath[1])) < 1){
+            if(length(read.fasta(files$datapath[1])) < 1){
               passed <- FALSE
             }
+          incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
         }
+        })
         
         if(passed){
           
@@ -581,8 +594,6 @@ shinyServer(function(input, output, session) {
         easyClose = TRUE,
         footer = NULL
       ))
-      
-      
       
     }
     }
@@ -639,15 +650,18 @@ shinyServer(function(input, output, session) {
         
         
         # check if we can read the fasta files
-        # load all as DNAStringset and raise error if they have no sequences
+        # load all as read.fasta and raise error if they have no sequences
         passed <- TRUE
+        withProgress(message = 'Checking files, please wait', value = 0,  {
         for (i in 1:nrow(files)){
           testload <- 
-            if(length(readDNAStringSet(files$datapath[1])) < 1){
+            if(length(read.fasta(files$datapath[1])) < 1){
               passed <- FALSE
             }
+          incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
         }
         
+        })
         if(passed){
           
           
@@ -703,8 +717,9 @@ shinyServer(function(input, output, session) {
   ### ui mid part
   output$upload_ui_mid <- renderUI({
     #   if (status$filespassed) {
-    conditionalPanel(
-      condition = "input.tsp=='tab1'",
+   # conditionalPanel(
+  #    condition = "input.tsp=='tab1'",
+    tagList(
       helpText(
         "Specify file handling: If you want to perform a comparative analysis you have to specify which samples are get pooled together. On default all samples will be pooled together."
       ),
@@ -720,8 +735,9 @@ shinyServer(function(input, output, session) {
   })
   
   output$upload_ui_bottom <- renderUI({
-    conditionalPanel(
-      condition = "input.tsp=='tab4'",
+   # conditionalPanel(
+  #    condition = "input.tsp=='tab4'",
+    tagList(
       helpText("Specify name and thresholds"),
       textInput(
         "eden_run_name",
@@ -746,9 +762,9 @@ shinyServer(function(input, output, session) {
   output$upload_hmm <- renderUI({
     if (input$radio == 1) {
       
-      conditionalPanel(
-        condition = "input.tsp=='tab3'",
-        
+  #    conditionalPanel(
+  #      condition = "input.tsp=='tab3'",
+   tagList(     
         fileInput3(
           'hmmfile',
           'upload a hidden markov model file',
@@ -761,9 +777,9 @@ shinyServer(function(input, output, session) {
   })
   
   output$upload_ui_hmm <- renderUI({
-    conditionalPanel(
-      condition = "input.tsp=='tab3'",
-      
+   # conditionalPanel(
+  #    condition = "input.tsp=='tab3'",
+   tagList(   
       helpText(
         "Select group definition. You can select precalculated hidden markov models (HMM) or upload a .HMM file which may contain multiple hmm models for the gene families of interest."
       ),
@@ -783,8 +799,9 @@ shinyServer(function(input, output, session) {
   })
   
   output$upload_ui_buttons <- renderUI({
-    conditionalPanel(
-      condition = "input.tsp=='overview",
+  #  conditionalPanel(
+   #  condition = "input.tsp=='overview",
+    tagList(
       # htmlOutput("warning4"),
       actionButton('checkButton', label = "run analysis")#,
       #    shinyjs::hidden(
@@ -801,14 +818,16 @@ shinyServer(function(input, output, session) {
   
   
   output$reset_ui_buttons <- renderUI({
-    conditionalPanel(condition = "input.tsp=='start",
+  #  conditionalPanel(condition = "input.tsp=='start",
+    tagList(
                      actionButton('deletefiles', label = "reset files"))
   })
   
   # show upload section for samples.txt
   output$uploadsamplestxt <- renderUI({
-    conditionalPanel(
-      condition = "input.tsp=='tab1'",
+ #   conditionalPanel(
+#      condition = "input.tsp=='tab1'",
+    tagList(
       radioButtons(
         "grouptype", labelMandatory(
           "select kind of analysis"),
@@ -829,8 +848,9 @@ shinyServer(function(input, output, session) {
     if (input$grouptype == 'comparative') {
       if (status$filespassed) {
         # comparative mode and we have files uploaded
-        conditionalPanel(
-          condition = "input.tsp=='tab1'",
+   #     conditionalPanel(
+  #        condition = "input.tsp=='tab1'",
+        tagList(
           helpText("Please define which samples are pooled together:"),
           numericInput(
             "groupnum",
@@ -1697,14 +1717,14 @@ if(input$dataset != ""){
   ### start main ui
   output$main_ui <- renderUI({
     conditionalPanel(
-      condition = "input.tsp=='overview' ||
-      input.tsp=='annotation' ||
-      input.tsp=='alignment' ||
-      input.tsp=='histogram' ||
-      input.tsp=='box' ||
-      input.tsp=='start' ||
-input.tsp=='overview' ||
-      input.tsp=='categories' ",
+      condition = "input.tabset=='overview' ||
+      input.tabset=='annotation' ||
+      input.tabset=='alignment' ||
+      input.tabset=='histogram' ||
+      input.tabset=='box' ||
+      input.tabset=='start' ||
+input.tabset=='overview' ||
+      input.tabset=='categories' ",
   #    helpText("Select which analysis run you want to show"),
       selectInput(
         "dataset",
@@ -1742,7 +1762,7 @@ input.tsp=='overview' ||
   output$start_UI_samples <- renderUI({
     if (input$analysistype == "comparative") {
       conditionalPanel(
-        condition = "input.tsp=='start' || input.tsp=='log'",
+        condition = "input.tabset=='start' || input.tabset=='log'",
         helpText(
           "For a comparative analysis please provide information which samples should be pooled together"
         ),

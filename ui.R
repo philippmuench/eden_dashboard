@@ -8,7 +8,8 @@ library(data.table)
 library(DT)
 library(zoo)
 library(pander)
-library(Biostrings)
+library(seqinr)
+#library(Biostrings)
 source("functions.R")
 
 ########## startup settings ##########
@@ -18,7 +19,9 @@ if (file.exists("/home/eden/eden.sh")) {
   csv.path <<- "/home/eden/data/csv" # folder where processed .tar files are located in csv format (one file for a sample)
   tar.path <<- "/home/eden/data/tar" # folder where .tar files are located (eden output)
   raw.path <<- "/home/eden/data/raw" # folder where unpacked .tar files are located
-  annotation.path <<- "/home/eden/tigr_data" # folder werhere TIGR_ROLE_NAMES and TIGRFAMS_ROLE_LINK are located
+  down.path <<- "/home/eden/data/eden_data" # folder where unpacked .tar files are located
+  
+   annotation.path <<- "/home/eden/tigr_data" # folder werhere TIGR_ROLE_NAMES and TIGRFAMS_ROLE_LINK are located
   dir.create(csv.path)
   dir.create(raw.path)
   dir.create(tar.path)
@@ -177,17 +180,15 @@ dashboardPage(skin = "black",
             fluidRow(
               column(width=6, 
                      
-                     box( title =  htmlOutput("box1statustest"), #"File upload",
+                    box( title =  htmlOutput("box1statustest"), #"File upload",
                           uiOutput("upload_ui_head"),
-                          tableOutput("fasta_uploaded"),
+                         tableOutput("fasta_uploaded"),
                           tableOutput("faa_uploaded"),
-                          tableOutput("ffn_uploaded"), status = "primary", solidHeader=T, width = NULL
-                     ),
+                         tableOutput("ffn_uploaded"), status = "primary", solidHeader=T, width = NULL
+                     ), 
                      box( title =  htmlOutput("box2status"),  uiOutput("upload_ui_mid"),status = "primary", solidHeader=T, width = NULL),
                      box( title =  "Reset",  uiOutput("reset_ui_buttons"),status = "primary", solidHeader=T, width = NULL),
-                     uiOutput("startEDEN")
-                     
-              ),
+                     uiOutput("startEDEN")),
               column(width=6,
                      box( title = htmlOutput("box3status"),  uiOutput("upload_ui_hmm"),tableOutput("hmm_uploaded"), width = NULL, status = "primary", solidHeader=T),
                      box( title = uiOutput("box4status"), uiOutput("upload_ui_bottom"),  status = "primary", solidHeader=T, width = NULL)))),
@@ -201,7 +202,7 @@ dashboardPage(skin = "black",
               useShinyjs(),
       
               box( id ="figurebox", title = "Figures and tables", status = "primary", solidHeader=  T, width = 12,
-                tabsetPanel(id = "tsp",
+                tabsetPanel(id = "tabset",
                   tabPanel(
                     "Overview",
                     div(DT::dataTableOutput("table"), style = "font-size:80%"),
@@ -255,28 +256,22 @@ dashboardPage(skin = "black",
               ),
           
               box( title = "Plot settings", status = "primary", solidHeader=T, width = 12,
-                     
                    # barplot download
-                     conditionalPanel(
-                       condition = "input.tsp=='overview'",
-                       downloadButton("dlTable", "Download filtered table")
-                     ),
+                   conditionalPanel(
+                     condition = "input.tabset=='overview'",
+                     downloadButton("dlRaw",  "Download raw data of selected families"),
+                     downloadButton("dlTable", "Download filtered table")
+                   ),
                    
                   # barplot download
                    conditionalPanel(
-                     condition = "input.tsp=='overview'",
-                     downloadButton("dlRaw")
-                   ),
-                     
-                  # barplot download
-                   conditionalPanel(
-                     condition = "input.tsp=='annotation'",
+                     condition = "input.tabset=='annotation'",
                      downloadButton("dlAnnotationPlot", "Download barplot")
                    ),
                    
                    # sequenceplot options
                      conditionalPanel(
-                       condition = "input.tsp=='alignment'",
+                       condition = "input.tabset=='alignment'",
                        checkboxInput('points', 'show points', value =
                                        TRUE),
                        uiOutput('colorpoints'),
@@ -285,7 +280,7 @@ dashboardPage(skin = "black",
                      
                    # histogram options
                      conditionalPanel(
-                       condition = "input.tsp=='histogram'",
+                       condition = "input.tabset=='histogram'",
                        sliderInput(
                          'binSize',
                          'Number of bins',
@@ -301,7 +296,7 @@ dashboardPage(skin = "black",
                     
                    # categorie options
                      conditionalPanel(
-                       condition = "input.tsp=='categories'",
+                       condition = "input.tabset=='categories'",
                        checkboxInput('navalues', 'remove NA', value =
                                        TRUE),
                        checkboxInput('showmean', 'plot mean value', value =
@@ -318,7 +313,7 @@ dashboardPage(skin = "black",
                        downloadButton("dlCurAnnotationplot", "Download boxplot")
                      ),
                      conditionalPanel(
-                       condition = "input.tsp=='box'",
+                       condition = "input.tabset=='box'",
                        selectInput(
                          "oderchoice",
                          label = "Order by",
@@ -333,7 +328,7 @@ dashboardPage(skin = "black",
               ), 
               
               box( title = "Export & configure", status = "primary", solidHeader=T, width = 12,
-                   condition = "input.tsp=='overview'",
+                   condition = "input.tabset=='overview'",
                    actionButton('resetSelection', label = "Reset row selection"),
                  
                    actionButton('reloadButton', label = "Reload/Import files")

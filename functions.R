@@ -1,4 +1,9 @@
 
+dir.exists <- function(d) {
+  de <- file.info(d)$isdir
+  ifelse(is.na(de), FALSE, de)
+}
+
 # moving input data files
 movingInput <- function(input) {
   print("moving files")
@@ -26,7 +31,7 @@ extractTar <- function(in.path, out.path, csv.path, progress=FALSE) {
         incProgress(i/length(tars), detail = paste("processing", tars[i]))
       }
       #check if samples already extracted
-      if(!dir.exists(paste0("csv/", tars[i]))){
+      if(!dir.exists(paste0(csv.path,"/", tars[i]))){
         
       #print(paste("untar", tars[i]))
       untar(paste(in.path, tars[i], sep = "/"),
