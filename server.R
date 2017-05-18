@@ -144,8 +144,16 @@ shinyServer(function(input, output, session) {
       get_running_status() # get_new_status returns the html-alert box visible on the first page
   }
   output$statusrunning = renderText({
-    invalidateLater(millis = 1000, session) # update every 1 seconds
-    update_running_status() # get a new status line
+    if(demomode){
+      
+      invalidateLater(millis = 60000, session) # update every 1 seconds
+      update_running_status() # get a new status line
+    NULL
+    } else {
+      invalidateLater(millis = 1000, session) # update every 1 seconds
+      update_running_status() # get a new status line
+      
+    }
   })
   
   ### finished status
@@ -1058,8 +1066,15 @@ shinyServer(function(input, output, session) {
   }
   
   output$log = renderText({
-    invalidateLater(millis = 3000, session)
-    update_log()
+if(demomode){
+  invalidateLater(millis = 60000, session)
+  update_log()
+} else {
+  invalidateLater(millis = 3000, session)
+  update_log()
+  
+  
+}
     NULL
   })
   

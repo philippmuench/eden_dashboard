@@ -12,6 +12,7 @@ library(seqinr)
 #library(Biostrings)
 source("functions.R")
 
+demomode <<- TRUE
 ########## startup settings ##########
 if (file.exists("/home/eden/eden.sh")) {
   # we are inside the docker container
@@ -137,7 +138,7 @@ dashboardPage(skin = "black",
       tabName = "dashboard",
       icon = icon("dashboard")
     ),
-    menuItem("Start new job", tabName = "newjob", icon = icon("road"),  badgeLabel = textOutput("text3"), badgeColor = "green"),
+   # menuItem("Start new job", tabName = "newjob", icon = icon("road"),  badgeLabel = textOutput("text3"), badgeColor = "green"),
     menuItem("Visualize job", tabName = "showjob", icon = icon("pie-chart"),  badgeLabel = textOutput("samplesnum"), badgeColor = "green"),
     conditionalPanel(
       condition = "input.sid == 'showjob'",
