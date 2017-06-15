@@ -17,7 +17,6 @@ shinyServer(function(input, output, session) {
     )
   )
   
-  
   output$samplesnum <- renderText({ 
     status$samplesnumber <- length(list.dirs(csv.path))
     as.character(status$samplesnumber -1)
@@ -535,15 +534,13 @@ shinyServer(function(input, output, session) {
       files <- input$files_faa
       if(all(file_ext(files$name) =="faa")){
         
-        
-        
         # check if we can read the fasta files
         # load all as read.fasta and raise error if they have no sequences
         passed <- TRUE
         withProgress(message = 'Checking files, please wait', value = 0,  {
         for (i in 1:nrow(files)){
-          testload <- 
-            if(length(read.fasta(files$datapath[1])) < 1){
+         # testload <- 
+            if(length(read.fasta(files$datapath[i], seqtype="AA")) < 1){
               passed <- FALSE
             }
           incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
@@ -551,7 +548,6 @@ shinyServer(function(input, output, session) {
         })
         
         if(passed){
-          
           
           infiles_faa <- as.data.frame(input$files_faa)
           
@@ -566,22 +562,22 @@ shinyServer(function(input, output, session) {
                     sep = "")
             err <- system(cmd,  intern = TRUE)
           }
-          out <- paste(err)
+      #    out <- paste(err)
           #    system2("echo", paste('";;faa files added" >> ', log.path, sep = ""))
           status$faa <- TRUE
-          status$files <- list.files(path =  faa.path,
-                                     full.names = FALSE,
-                                     recursive = FALSE)
-          status$faa_files <- list.files(path =  faa.path,
-                                         full.names = FALSE,
-                                         recursive = FALSE)
+       #   status$files <- list.files(path =  faa.path,
+        #                             full.names = FALSE,
+         #                            recursive = FALSE)
+     #     status$ffn_files <- list.files(path =  ffn.path,
+       #                                  full.names = FALSE,
+      #                                   recursive = FALSE)
           
-          status$num_faa <- length(status$faa_files)
-          if (length(status$ffn_files) > 0) {
+          status$num_faa <- nrow(infiles_faa)
+         if(isolate(status$faa) & isolate(status$ffn)) {
             #compare faa and ffn names
             status$filespassed <- TRUE
           }
-          return(NULL)
+         return(NULL)
           
         } else {
           
@@ -644,83 +640,87 @@ shinyServer(function(input, output, session) {
   })
   
   
-  
   output$ffn_uploaded <- renderTable({
     if (is.null(input$files_ffn))
       return(NULL)
     else {
-      infiles_ffn <- as.data.frame(input$files_ffn)
-
-      # check input files if they have the right ending
+      
       files <- input$files_ffn
-      if(all(file_ext(files$name) =="faa")){
-            
-        
+      if(all(file_ext(files$name) =="ffn")){
         
         # check if we can read the fasta files
         # load all as read.fasta and raise error if they have no sequences
         passed <- TRUE
         withProgress(message = 'Checking files, please wait', value = 0,  {
-        for (i in 1:nrow(files)){
-          testload <- 
-            if(length(read.fasta(files$datapath[1])) < 1){
-              passed <- FALSE
-            }
-          incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
-        }
-        
+          for (i in 1:nrow(files)){
+            #testload <- 
+              if(length(read.fasta(files$datapath[i], seqtype = "DNA")) < 1){
+                passed <- FALSE
+              }
+            incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
+         }
         })
+        
         if(passed){
           
+          infiles_ffn <- as.data.frame(input$files_ffn)
           
-      infiles_ffn$dest <-
-        paste(ffn.path, infiles_ffn$name, sep = "/")
-      for (i in 1:nrow(infiles_ffn)) {
-        cmd <-
-          paste("mv ",
-                infiles_ffn$datapath[i],
-                " ",
-                infiles_ffn$dest[i],
-                sep = "")
-        err <- system(cmd,  intern = TRUE)
-      }
-      out <- paste(err)
-  #    system2("echo", paste('";;ffn files added" >> ', log.path, sep = ""))
-      status$ffn <- TRUE
-      status$files <- list.files(path =  ffn.path,
-                                 full.names = FALSE,
-                                 recursive = FALSE)
-      status$ffn_files <- list.files(path =  ffn.path,
-                                     full.names = FALSE,
-                                     recursive = FALSE)
-      status$num_ffn <- length(status$ffn_files)
-      if (length(status$faa_files) > 0) {
-        status$filespassed <- TRUE
-      }
-      return(NULL)
-      
+          infiles_ffn$dest <-
+            paste(ffn.path, infiles_ffn$name, sep = "/")
+          for (i in 1:nrow(infiles_ffn)) {
+            cmd <-
+              paste("mv ",
+                    infiles_ffn$datapath[i],
+                    " ",
+                    infiles_ffn$dest[i],
+                    sep = "")
+            err <- system(cmd,  intern = TRUE)
+          }
+       
+        #  out <- paste(err)
+          #    system2("echo", paste('";;faa files added" >> ', log.path, sep = ""))
+     
+            status$ffn <- TRUE
+     #     status$files <- list.files(path =  ffn.path,
+      #                               full.names = FALSE,
+       #                              recursive = FALSE)
+      #    status$faa_files <- list.files(path =  faa.path,
+      #                                   full.names = FALSE,
+      #                                   recursive = FALSE)
+    
+     #     status$num_ffn <- length(status$files)
+            status$num_ffn <- nrow(infiles_ffn)
+      if(isolate(status$faa) & isolate(status$ffn)) {
+            #compare faa and ffn names
+            status$filespassed <- TRUE
+         }
+ 
+         return(NULL)
         } else {
+          
           showModal(modalDialog(
-            title = "Please check input file",
-            "Seems that some files are in the wrong format or empty.",
+            title = "Please check input files",
+            "Seems that one of the files is not in the FASTA format or empty.",
             easyClose = TRUE,
             footer = NULL
           ))
           
         }
-    } else {
-      
-      showModal(modalDialog(
-        title = "Please check file ending",
-        "Currenlty only files with the '.ffn' ending are supported.",
-        easyClose = TRUE,
-        footer = NULL
-      ))
-      
+        
+        
+      } else {
+        showModal(modalDialog(
+          title = "Please check file ending",
+          "Currenlty only files with the '.faa' ending are supported.",
+          easyClose = TRUE,
+          footer = NULL
+        ))
+        
+      }
     }
-    }
+    
+    
   })
-  
   
   ### ui mid part
   output$upload_ui_mid <- renderUI({
