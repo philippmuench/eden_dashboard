@@ -12,7 +12,7 @@ library(seqinr)
 #library(Biostrings)
 source("functions.R")
 
-demomode <<- TRUE
+demomode <<- FALSE
 ########## startup settings ##########
 if (file.exists("/home/eden/eden.sh")) {
   # we are inside the docker container
