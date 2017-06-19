@@ -612,7 +612,7 @@ shinyServer(function(input, output, session) {
     else{
       # process ffn
       status$hmmpassed <- TRUE
-      files <- input$files_faa
+      files <- input$files_hmm
       if(all(file_ext(files$name) =="HMM")){
         
       
