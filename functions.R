@@ -33,54 +33,54 @@ extractTar <- function(in.path, out.path, csv.path, progress=FALSE) {
       #check if samples already extracted
       if(!dir.exists(paste0(csv.path,"/", tars[i]))){
         
-      #print(paste("untar", tars[i]))
-      untar(paste(in.path, tars[i], sep = "/"),
-            exdir = paste(out.path, "/", tars[i], sep = ""))
-  
-      # samples per tar files
-      samples <-
-        list.files(
-          path = paste(out.path, "/", tars[i], sep = ""),
-          full.names = FALSE,
-          recursive = FALSE
-        )
-      dnds_there <- TRUE
-      # check if we have for all samples dnds calculations
-      for(sample in samples){
-        dnds_list <- list.files(
-          path = paste(out.path, "/",tars[i],  "/",sample, "/dnds/", sep = ""),
-          full.names = FALSE,
-          recursive = FALSE
-        )
-        if (length(dnds_list)<1) {
-          dnds_there <- FALSE
-        }
-      }
-      
-      if (length(samples >0) && dnds_there){
-        for (sample in samples) {
-          mat <-
-            fisher_test(load_dnds(
-              in_folder = paste(out.path, "/", tars[i], "/", sample, "/dnds/", sep = ""),
-              gap_folder = paste(out.path, "/", tars[i], "/", sample, "/gap/", sep =
-                                   "")
-            ))
-          dir.create(paste(csv.path, "/", tars[i], sep = ""))
-          # write csv file
-          write.table(
-            mat,
-            file = paste(csv.path, "/", tars[i], "/", sample, ".csv", sep = ""),
-            quote = F,
-            sep = ";",
-            row.names = F
+        #print(paste("untar", tars[i]))
+        untar(paste(in.path, tars[i], sep = "/"),
+              exdir = paste(out.path, "/", tars[i], sep = ""))
+        
+        # samples per tar files
+        samples <-
+          list.files(
+            path = paste(out.path, "/", tars[i], sep = ""),
+            full.names = FALSE,
+            recursive = FALSE
           )
-          no_tar <<- FALSE
+        dnds_there <- TRUE
+        # check if we have for all samples dnds calculations
+        for(sample in samples){
+          dnds_list <- list.files(
+            path = paste(out.path, "/",tars[i],  "/",sample, "/dnds/", sep = ""),
+            full.names = FALSE,
+            recursive = FALSE
+          )
+          if (length(dnds_list)<1) {
+            dnds_there <- FALSE
+          }
         }
-      } else {
-        print("dnds_file is missing")
-      }
-      
-      
+        
+        if (length(samples >0) && dnds_there){
+          for (sample in samples) {
+            mat <-
+              fisher_test(load_dnds(
+                in_folder = paste(out.path, "/", tars[i], "/", sample, "/dnds/", sep = ""),
+                gap_folder = paste(out.path, "/", tars[i], "/", sample, "/gap/", sep =
+                                     "")
+              ))
+            dir.create(paste(csv.path, "/", tars[i], sep = ""))
+            # write csv file
+            write.table(
+              mat,
+              file = paste(csv.path, "/", tars[i], "/", sample, ".csv", sep = ""),
+              quote = F,
+              sep = ";",
+              row.names = F
+            )
+            no_tar <<- FALSE
+          }
+        } else {
+          print("dnds_file is missing")
+        }
+        
+        
       } else {
         print("tar already extracted")
         
@@ -163,7 +163,7 @@ readCsv <- function(path) {
   }
   # add annotation
   if(file.exists(paste(annotation.path, "TIGRFAMS_ROLE_LINK", sep = "/"))){
-  mat <- annotate(mat)
+    mat <- annotate(mat)
   } else { print("cannot annotate data, no annotation file found!")}
   return(mat)
 }
@@ -200,9 +200,9 @@ readData <- function(path.summary) {
     if(file.exists(paste(annotation.path, "TIGRFAMS_ROLE_LINK", sep = "/"))){
       mat.annot <- annotate(mat)
     } else {
-            
+      
       print("skip annotation, no annotation file found")
-          }
+    }
     
   } else
     mat.annot <- NULL
@@ -215,11 +215,11 @@ annotate <- function(mat) {
   if (substring(mat$name, 1, 4)[1] == "TIGR") {
     
     if(file.exists(paste(annotation.path, "TIGRFAMS_ROLE_LINK", sep = "/"))){
-
+      
       tigr2link <-
         read.table(paste(annotation.path, "TIGRFAMS_ROLE_LINK", sep = "/"),
                    header = F)      
-          } 
+    } 
     if(file.exists(paste(annotation.path, "TIGRFAMS_ROLE_LINK", sep = "/"))){
       role2name <-
         read.csv2(
@@ -261,14 +261,14 @@ fisher_test <- function(dnds_summary) {
     TestMartix <-
       matrix(
         c(
-          round(dnds_summary$sum_pN[i]),
-          round(dnds_summary$sum_pS[i]),
-          round(sum(dnds_summary$sum_pN)) - round(dnds_summary$sum_pN[i]),
-          round(sum(dnds_summary$sum_pS)) - round(dnds_summary$sum_pS[i])
+          round(dnds_summary$sum_Nd[i]),
+          round(dnds_summary$sum_Sd[i]),
+          round(sum(dnds_summary$sum_Nd)) - round(dnds_summary$sum_Nd[i]),
+          round(sum(dnds_summary$sum_Sd)) - round(dnds_summary$sum_Sd[i])
         ),
         nrow = 2,
         dimnames = list(
-          type = c("dN", "dS"),
+          type = c("Nd", "Sd"),
           sample = c("case", "control")
         )
       )
@@ -357,9 +357,9 @@ load_dnds <- function(in_folder = "dnds/",
   file_list <- list.files(in_folder)
   
   # create results matrix
-  mat = data.frame(matrix(vector(), length(file_list), 4,
+  mat = data.frame(matrix(vector(), length(file_list), 6,
                           dimnames = list(
-                            c(), c("name", "sum_pN", "sum_pS", "ratio")
+                            c(), c("name", "sum_pN", "sum_pS", "sum_Nd" , "sum_Sd",  "ratio")
                           )),
                    stringsAsFactors = F) # name, sum(dN), sum(dS), sum(dN/dS)
   
@@ -397,6 +397,15 @@ load_dnds <- function(in_folder = "dnds/",
     sum_pS <-
       sum(file_data[which(is.finite(file_data$pS)), ]$pS, na.rm = T)
     
+    # for test
+    sum_Nd <-
+      sum(file_data[which(is.finite(file_data$Nd)), ]$Nd, na.rm = T) +
+        sum(file_data[which(is.finite(file_data$Nd_tip)), ]$Nd_tip, na.rm = T)
+    sum_Sd <-
+      sum(file_data[which(is.finite(file_data$Sd)), ]$Sd, na.rm = T) +
+      sum(file_data[which(is.finite(file_data$Sd_tip)), ]$Sd_tip, na.rm = T)
+    
+    
     if (is.finite(sum_pS)) {
       if (sum_pS > sum_threshold) {
         ratio <- sum_pN / sum_pS
@@ -409,6 +418,8 @@ load_dnds <- function(in_folder = "dnds/",
     mat$name[i] <- as.character(fam_name)
     mat$sum_pN[i] <- sum_pN
     mat$sum_pS[i] <- sum_pS
+    mat$sum_Nd[i] <- sum_Nd
+    mat$sum_Sd[i] <- sum_Sd
     mat$ratio[i] <- ratio
     i <- i + 1
   }
@@ -516,7 +527,7 @@ sliding_window <-
            gap_data,
            w_size = 10,
            g_threshold = 0.2) {
-
+    
     dNdS_window <- rep(0, length(dN))
     if (w_size > 0) {
       dN_window <- rollsum(dN, w_size, fill = list(NA, NULL, NA))

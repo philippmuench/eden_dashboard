@@ -130,7 +130,7 @@ shinyServer(function(input, output, session) {
   status$newfiles <- FALSE
   status$serverstatus <- "ready"
   status$eden_error <- FALSE
-
+  
   
   # ==============================================================================================
   # check procedure for the detection which files are provided by the user
@@ -147,7 +147,7 @@ shinyServer(function(input, output, session) {
       
       invalidateLater(millis = 60000, session) # update every 1 seconds
       update_running_status() # get a new status line
-    NULL
+      NULL
     } else {
       invalidateLater(millis = 1000, session) # update every 1 seconds
       update_running_status() # get a new status line
@@ -157,19 +157,19 @@ shinyServer(function(input, output, session) {
   
   ### finished status
   # function to evaluate if a process is running in the background
-#  update_finished_status <- function() {
- #   my_finished_status <<-
-#      get_finished_status() # get_new_status returns the html-alert box visible on the first page
-#  }
-#  output$statusfinished = renderText({
-#    invalidateLater(millis = 1000, session) # update every 1 seconds
-#    update_finished_status() # get a new status line
-#  })
+  #  update_finished_status <- function() {
+  #   my_finished_status <<-
+  #      get_finished_status() # get_new_status returns the html-alert box visible on the first page
+  #  }
+  #  output$statusfinished = renderText({
+  #    invalidateLater(millis = 1000, session) # update every 1 seconds
+  #    update_finished_status() # get a new status line
+  #  })
   # 
   # ==============================================================================================
   # procedure to update log file / progress message
   # ==============================================================================================
-
+  
   # function that checks if there are new tar files in the tar.path that have not folder in csv folder
   check_new_file <- function(){
     raws <- list.dirs(raw.path, recursive = F, full.names = F)
@@ -183,29 +183,29 @@ shinyServer(function(input, output, session) {
   
   # loads the log file and extract the informations for the check process bar
   get_new_log <- function() {
-#    cat(".")
-   msg <- ""
+    #    cat(".")
+    msg <- ""
     
     if(file.exists(log.path)){
-     if( file.info(log.path)$size >0){
-       data <- read.table(log.path, header = F, sep = ";")
-       colnames(data) <- c("type", "time", "message")
-       last_event <- data[nrow(data),]$message # current message
-       if (last_event == "error") {
-         status$eden_error <- TRUE
-         last_error <- last_event
-         status$serverstatus <- "error"
-       } else if (last_event == "finished") {
-         status$eden_finished <- TRUE
-       }
-     }
+      if( file.info(log.path)$size >0){
+        data <- read.table(log.path, header = F, sep = ";")
+        colnames(data) <- c("type", "time", "message")
+        last_event <- data[nrow(data),]$message # current message
+        if (last_event == "error") {
+          status$eden_error <- TRUE
+          last_error <- last_event
+          status$serverstatus <- "error"
+        } else if (last_event == "finished") {
+          status$eden_finished <- TRUE
+        }
+      }
       output$logtable = renderTable({
         if(file.exists(log.path) & file.info(log.path)$size >0){
           logtable <- read.csv2(log.path, header=F)
           colnames(logtable) <- c("type", "time", "message")
           logtable.rev <- apply(as.data.frame(logtable), 2, rev)  # reverse
           last_event <- as.character( data[nrow(data),]$message) # current message
-       print(logtable.rev)
+          print(logtable.rev)
           #  print(last_event) 
         } else {
           # either there is no log file at all or the log file is without content
@@ -215,8 +215,8 @@ shinyServer(function(input, output, session) {
       )
       
       return(msg)
-     }
-
+    }
+    
     
   }
   
@@ -238,7 +238,7 @@ shinyServer(function(input, output, session) {
       iconName <- "remove"
     }
     paste0("Sequence files <i class='glyphicon glyphicon-",iconName,"'></i>")
-
+    
   })
   
   output$box2status <- renderText({
@@ -259,8 +259,8 @@ shinyServer(function(input, output, session) {
   })
   
   output$startError <- renderUI({
- #   iconName <- "remove"
-#    icon(iconName, lib = "glyphicon")
+    #   iconName <- "remove"
+    #    icon(iconName, lib = "glyphicon")
     paste0("Missing input data! Please check boxes with a 'x' sign and provide necessary informations")
   })
   
@@ -352,34 +352,34 @@ shinyServer(function(input, output, session) {
   output$upload_ui_head_a <- renderUI({
     if (input$intype == 'orf') {
       if (status$num_fasta == 0) {
-    #    conditionalPanel(condition = "status.isready==TRUE",
-
+        #    conditionalPanel(condition = "status.isready==TRUE",
+        
         tagList(
           fluidRow(column(
-                           5,
-                           fileInput3(
-                             'files_faa',
-                             labelMandatory('upload .faa files'),
-                             accept = c('.faa'),
-                             multiple = TRUE
-                           )
-                         ), column(
-                           5,
-                           fileInput3(
-                             'files_ffn',
-                             labelMandatory('upload .ffn files'),
-                             accept = c('.ffn'),
-                             multiple = TRUE
-                           )
-                         )),
-                         
-                         fluidRow(column(
-                           5,
-                           htmlOutput("upload_response_faa")
-                         ), column(
-                           5,
-                           htmlOutput("upload_response_ffn")
-                         )))
+            5,
+            fileInput3(
+              'files_faa',
+              labelMandatory('upload .faa files'),
+              accept = c('.faa'),
+              multiple = TRUE
+            )
+          ), column(
+            5,
+            fileInput3(
+              'files_ffn',
+              labelMandatory('upload .ffn files'),
+              accept = c('.ffn'),
+              multiple = TRUE
+            )
+          )),
+          
+          fluidRow(column(
+            5,
+            htmlOutput("upload_response_faa")
+          ), column(
+            5,
+            htmlOutput("upload_response_ffn")
+          )))
       } else {
         conditionalPanel(condition = "status.isready==TRUE",
                          #   htmlOutput("warning2"), 
@@ -394,7 +394,7 @@ shinyServer(function(input, output, session) {
                          updateRadioButtons(session, "intype",
                                             selected = "fasta"
                          )
-          
+                         
         )
       }
       
@@ -411,7 +411,7 @@ shinyServer(function(input, output, session) {
             width = '100%'
           ),
           htmlOutput("upload_response")
-
+          
         )
       } else {
         conditionalPanel(condition = "status.isready==TRUE",
@@ -432,7 +432,7 @@ shinyServer(function(input, output, session) {
   
   ### ui head part
   output$upload_ui_head <- renderUI({
-   # conditionalPanel(
+    # conditionalPanel(
     #  condition = "status.isready==TRUE",
     tagList(
       helpText(
@@ -457,24 +457,24 @@ shinyServer(function(input, output, session) {
     else {
       # check if the files have the right ending
       files <- input$files_fasta
-     if(all(file_ext(files$name) =="fasta")){
-    
+      if(all(file_ext(files$name) =="fasta")){
+        
         # check if we can read the fasta files
         # load all as read.fasta and raise error if they have no sequences
         passed <- TRUE
         withProgress(message = 'Checking files, please wait', value = 0,  {
           
-       for (i in 1:nrow(files)){
-           
-           
-         testload <- 
-         if(length(read.fasta(files$datapath[1])) < 1){
-          passed <- FALSE
-          
-         }
-         incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
-         }
-       })
+          for (i in 1:nrow(files)){
+            
+            
+            testload <- 
+              if(length(read.fasta(files$datapath[1])) < 1){
+                passed <- FALSE
+                
+              }
+            incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
+          }
+        })
         
         if (passed){
           status$filespassed <- TRUE
@@ -509,8 +509,8 @@ shinyServer(function(input, output, session) {
           ))
           
         }
-
-                
+        
+        
       } else {
         # not all files have "fasta" ending
         showModal(modalDialog(
@@ -520,7 +520,7 @@ shinyServer(function(input, output, session) {
           footer = NULL
         ))
       }
-    
+      
       
     }
     return(NULL)
@@ -538,13 +538,13 @@ shinyServer(function(input, output, session) {
         # load all as read.fasta and raise error if they have no sequences
         passed <- TRUE
         withProgress(message = 'Checking files, please wait', value = 0,  {
-        for (i in 1:nrow(files)){
-         # testload <- 
+          for (i in 1:nrow(files)){
+            # testload <- 
             if(length(read.fasta(files$datapath[i], seqtype="AA")) < 1){
               passed <- FALSE
             }
-          incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
-        }
+            incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
+          }
         })
         
         if(passed){
@@ -562,22 +562,22 @@ shinyServer(function(input, output, session) {
                     sep = "")
             err <- system(cmd,  intern = TRUE)
           }
-      #    out <- paste(err)
+          #    out <- paste(err)
           #    system2("echo", paste('";;faa files added" >> ', log.path, sep = ""))
           status$faa <- TRUE
-       #   status$files <- list.files(path =  faa.path,
-        #                             full.names = FALSE,
-         #                            recursive = FALSE)
-     #     status$ffn_files <- list.files(path =  ffn.path,
-       #                                  full.names = FALSE,
-      #                                   recursive = FALSE)
+          #   status$files <- list.files(path =  faa.path,
+          #                             full.names = FALSE,
+          #                            recursive = FALSE)
+          #     status$ffn_files <- list.files(path =  ffn.path,
+          #                                  full.names = FALSE,
+          #                                   recursive = FALSE)
           
           status$num_faa <- nrow(infiles_faa)
-         if(isolate(status$faa) & isolate(status$ffn)) {
+          if(isolate(status$faa) & isolate(status$ffn)) {
             #compare faa and ffn names
             status$filespassed <- TRUE
           }
-         return(NULL)
+          return(NULL)
           
         } else {
           
@@ -589,17 +589,17 @@ shinyServer(function(input, output, session) {
           ))
           
         }
-     
-    
-    } else {
-      showModal(modalDialog(
-        title = "Please check file ending",
-        "Currenlty only files with the '.faa' ending are supported.",
-        easyClose = TRUE,
-        footer = NULL
-      ))
-      
-    }
+        
+        
+      } else {
+        showModal(modalDialog(
+          title = "Please check file ending",
+          "Currenlty only files with the '.faa' ending are supported.",
+          easyClose = TRUE,
+          footer = NULL
+        ))
+        
+      }
     }
     
     
@@ -615,17 +615,17 @@ shinyServer(function(input, output, session) {
       files <- input$files_hmm
       if(all(file_ext(files$name) =="HMM")){
         
-      
-      hmmfile <- as.data.frame(input$hmmfile)
-      hmmfile$dest <- hmm.path
-      cmd <-
-        paste("mv ", hmmfile$datapath, " ", hmmfile$dest, sep = "")
-      err <- system(cmd,  intern = TRUE)
-      out <- paste(err)
-      hmmfile_success <<- TRUE
-      status$num_hmm <- 1
-      
-      return(NULL)
+        
+        hmmfile <- as.data.frame(input$hmmfile)
+        hmmfile$dest <- hmm.path
+        cmd <-
+          paste("mv ", hmmfile$datapath, " ", hmmfile$dest, sep = "")
+        err <- system(cmd,  intern = TRUE)
+        out <- paste(err)
+        hmmfile_success <<- TRUE
+        status$num_hmm <- 1
+        
+        return(NULL)
       } else {
         
         showModal(modalDialog(
@@ -654,11 +654,11 @@ shinyServer(function(input, output, session) {
         withProgress(message = 'Checking files, please wait', value = 0,  {
           for (i in 1:nrow(files)){
             #testload <- 
-              if(length(read.fasta(files$datapath[i], seqtype = "DNA")) < 1){
-                passed <- FALSE
-              }
+            if(length(read.fasta(files$datapath[i], seqtype = "DNA")) < 1){
+              passed <- FALSE
+            }
             incProgress(1/nrow(files), message = paste("checking", files$name[i]) )
-         }
+          }
         })
         
         if(passed){
@@ -676,26 +676,26 @@ shinyServer(function(input, output, session) {
                     sep = "")
             err <- system(cmd,  intern = TRUE)
           }
-       
-        #  out <- paste(err)
+          
+          #  out <- paste(err)
           #    system2("echo", paste('";;faa files added" >> ', log.path, sep = ""))
-     
-            status$ffn <- TRUE
-     #     status$files <- list.files(path =  ffn.path,
-      #                               full.names = FALSE,
-       #                              recursive = FALSE)
-      #    status$faa_files <- list.files(path =  faa.path,
-      #                                   full.names = FALSE,
-      #                                   recursive = FALSE)
-    
-     #     status$num_ffn <- length(status$files)
-            status$num_ffn <- nrow(infiles_ffn)
-      if(isolate(status$faa) & isolate(status$ffn)) {
+          
+          status$ffn <- TRUE
+          #     status$files <- list.files(path =  ffn.path,
+          #                               full.names = FALSE,
+          #                              recursive = FALSE)
+          #    status$faa_files <- list.files(path =  faa.path,
+          #                                   full.names = FALSE,
+          #                                   recursive = FALSE)
+          
+          #     status$num_ffn <- length(status$files)
+          status$num_ffn <- nrow(infiles_ffn)
+          if(isolate(status$faa) & isolate(status$ffn)) {
             #compare faa and ffn names
             status$filespassed <- TRUE
-         }
- 
-         return(NULL)
+          }
+          
+          return(NULL)
         } else {
           
           showModal(modalDialog(
@@ -725,8 +725,8 @@ shinyServer(function(input, output, session) {
   ### ui mid part
   output$upload_ui_mid <- renderUI({
     #   if (status$filespassed) {
-   # conditionalPanel(
-  #    condition = "input.tsp=='tab1'",
+    # conditionalPanel(
+    #    condition = "input.tsp=='tab1'",
     tagList(
       helpText(
         "Specify file handling: If you want to perform a comparative analysis you have to specify which samples are get pooled together. On default all samples will be pooled together."
@@ -743,8 +743,8 @@ shinyServer(function(input, output, session) {
   })
   
   output$upload_ui_bottom <- renderUI({
-   # conditionalPanel(
-  #    condition = "input.tsp=='tab4'",
+    # conditionalPanel(
+    #    condition = "input.tsp=='tab4'",
     tagList(
       helpText("Specify name and thresholds"),
       textInput(
@@ -770,9 +770,9 @@ shinyServer(function(input, output, session) {
   output$upload_hmm <- renderUI({
     if (input$radio == 1) {
       
-  #    conditionalPanel(
-  #      condition = "input.tsp=='tab3'",
-   tagList(     
+      #    conditionalPanel(
+      #      condition = "input.tsp=='tab3'",
+      tagList(     
         fileInput3(
           'hmmfile',
           'upload a hidden markov model file',
@@ -785,9 +785,9 @@ shinyServer(function(input, output, session) {
   })
   
   output$upload_ui_hmm <- renderUI({
-   # conditionalPanel(
-  #    condition = "input.tsp=='tab3'",
-   tagList(   
+    # conditionalPanel(
+    #    condition = "input.tsp=='tab3'",
+    tagList(   
       helpText(
         "Select group definition. You can select precalculated hidden markov models (HMM) or upload a .HMM file which may contain multiple hmm models for the gene families of interest."
       ),
@@ -807,8 +807,8 @@ shinyServer(function(input, output, session) {
   })
   
   output$upload_ui_buttons <- renderUI({
-  #  conditionalPanel(
-   #  condition = "input.tsp=='overview",
+    #  conditionalPanel(
+    #  condition = "input.tsp=='overview",
     tagList(
       # htmlOutput("warning4"),
       actionButton('checkButton', label = "run analysis")#,
@@ -826,15 +826,15 @@ shinyServer(function(input, output, session) {
   
   
   output$reset_ui_buttons <- renderUI({
-  #  conditionalPanel(condition = "input.tsp=='start",
+    #  conditionalPanel(condition = "input.tsp=='start",
     tagList(
-                     actionButton('deletefiles', label = "reset files"))
+      actionButton('deletefiles', label = "reset files"))
   })
   
   # show upload section for samples.txt
   output$uploadsamplestxt <- renderUI({
- #   conditionalPanel(
-#      condition = "input.tsp=='tab1'",
+    #   conditionalPanel(
+    #      condition = "input.tsp=='tab1'",
     tagList(
       radioButtons(
         "grouptype", labelMandatory(
@@ -856,8 +856,8 @@ shinyServer(function(input, output, session) {
     if (input$grouptype == 'comparative') {
       if (status$filespassed) {
         # comparative mode and we have files uploaded
-   #     conditionalPanel(
-  #        condition = "input.tsp=='tab1'",
+        #     conditionalPanel(
+        #        condition = "input.tsp=='tab1'",
         tagList(
           helpText("Please define which samples are pooled together:"),
           numericInput(
@@ -921,7 +921,7 @@ shinyServer(function(input, output, session) {
   
   # delete files on button press
   observeEvent(input$deletefiles, {
-  
+    
     status$serverstatus <- "ready"
     status$samplesnumber <- 0
     # reset number of uploaded files to zero
@@ -948,7 +948,7 @@ shinyServer(function(input, output, session) {
     
     isolate({
       unlink(faa.path, recursive = T, force = T)
-     
+      
       unlink(ffn.path, recursive = T, force = T)
       unlink(fasta.path, recursive = T, force = T)
       unlink(hmm.path, recursive = T, force = T)
@@ -956,11 +956,11 @@ shinyServer(function(input, output, session) {
       unlink("/home/eden/data/groups.txt",
              recursive = T,
              force = T)
-
+      
       dir.create(fasta.path, showWarnings = FALSE)
       dir.create(faa.path, showWarnings = FALSE)
       dir.create(ffn.path, showWarnings = FALSE)
-  
+      
       Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
       Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
       Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
@@ -982,8 +982,8 @@ shinyServer(function(input, output, session) {
       temp <- paste0("name", i)
       temp2 <<- paste0("ind", i)
       nam[i] <- input[[temp]]
-   #   print(paste(basename(file_path_sans_ext(input[[temp2]])),  collapse =
-   #                 "+"))
+      #   print(paste(basename(file_path_sans_ext(input[[temp2]])),  collapse =
+      #                 "+"))
       #  sam[i] <- paste(substr(input[[temp2]], 1, nchar(input[[temp2]])-4), collapse="+")
       
       #  sam[i] <- paste(substr(input[[temp2]], 1, nchar(input[[temp2]])-4), collapse="+")
@@ -1001,8 +1001,8 @@ shinyServer(function(input, output, session) {
     )
     status$samples_provided <- TRUE
     status$num_groups <- members
- #  system2("echo",
-  #          paste('";;grouping file updated" >> ', log.path, sep = ""))
+    #  system2("echo",
+    #          paste('";;grouping file updated" >> ', log.path, sep = ""))
     
   })
   
@@ -1066,15 +1066,15 @@ shinyServer(function(input, output, session) {
   }
   
   output$log = renderText({
-if(demomode){
-  invalidateLater(millis = 60000, session)
-  update_log()
-} else {
-  invalidateLater(millis = 3000, session)
-  update_log()
-  
-  
-}
+    if(demomode){
+      invalidateLater(millis = 60000, session)
+      update_log()
+    } else {
+      invalidateLater(millis = 3000, session)
+      update_log()
+      
+      
+    }
     NULL
   })
   
@@ -1104,7 +1104,7 @@ if(demomode){
              recursive = T,
              force = T)
     }
-  #  unlink(log.path, recursive = T, force = T)
+    #  unlink(log.path, recursive = T, force = T)
     dir.create(fasta.path)
     dir.create(faa.path)
     dir.create(ffn.path)
@@ -1359,7 +1359,7 @@ if(demomode){
   # update status$dataset if input variable changes
   observe({
     input$dataset
-status$dataset <- input$dataset
+    status$dataset <- input$dataset
   })
   
   observe({
@@ -1382,19 +1382,19 @@ status$dataset <- input$dataset
   # enable buttons if eden finished and cleanup
   observe({
     if (status$eden_finished){
-#      Sys.sleep(1)
-        # extract and update boxes
-#          withProgress(message = 'Extract files, please wait', value = 0, {
-#            extractTar(tar.path, raw.path, csv.path, progress=TRUE)
-#          })
-#         updateSelectInput(session,
- #                           "dataset",  label = "Select run", choices = list.files(
-#                              path = csv.path,
-#                              full.names = FALSE,
-#                              recursive = FALSE
-#                            )
-#          )
-#         updateSelectInput(session, "samples")
+      #      Sys.sleep(1)
+      # extract and update boxes
+      #          withProgress(message = 'Extract files, please wait', value = 0, {
+      #            extractTar(tar.path, raw.path, csv.path, progress=TRUE)
+      #          })
+      #         updateSelectInput(session,
+      #                           "dataset",  label = "Select run", choices = list.files(
+      #                              path = csv.path,
+      #                              full.names = FALSE,
+      #                              recursive = FALSE
+      #                            )
+      #          )
+      #         updateSelectInput(session, "samples")
       
       # inform user
       showModal(modalDialog(
@@ -1407,10 +1407,10 @@ status$dataset <- input$dataset
       system2("echo", paste('"internal;;update ui\n" >> ', log.path, sep = ""))
       # reset variables
       status$eden_finished <- FALSE
-   #   last_log <- "eden updated"
+      #   last_log <- "eden updated"
       status$serverstatus <- "finished"
       shinyjs::enable("checkButton")
-     shinyjs::enable("deletefiles")
+      shinyjs::enable("deletefiles")
       status$filespassed <- FALSE
       ##   status$grouppassed <- FALSE
       status$settingspassed <- FALSE
@@ -1421,8 +1421,8 @@ status$dataset <- input$dataset
       status$num_ffn <- 0
       status$num_groups <- 0
       status$eden_finished <- FALSE
-  
-     updateRadioButtons(session, "radio",
+      
+      updateRadioButtons(session, "radio",
                          selected = 2
       )
       updateRadioButtons(session, "intype",
@@ -1435,20 +1435,20 @@ status$dataset <- input$dataset
       status$eden_error <- FALSE
       unlink(faa.path, recursive = T, force = T)
       unlink(ffn.path, recursive = T, force = T)
-     unlink(fasta.path, recursive = T, force = T)
-     unlink(hmm.path, recursive = T, force = T)
+      unlink(fasta.path, recursive = T, force = T)
+      unlink(hmm.path, recursive = T, force = T)
       unlink(sample.path, recursive = T, force = T)
       unlink("/home/eden/data/groups.txt",
              recursive = T,
-            force = T)
-   #unlink(log.path, recursive = T, force = T)
-    #  system2("echo", paste('"status;;initialize\n" >> ', log.path, sep = ""))
-     # system2("echo", paste('"status;;server ready\n" >> ', log.path, sep = ""))
-  
-        dir.create(fasta.path)
-        dir.create(faa.path)
-        dir.create(ffn.path)
-     
+             force = T)
+      #unlink(log.path, recursive = T, force = T)
+      #  system2("echo", paste('"status;;initialize\n" >> ', log.path, sep = ""))
+      # system2("echo", paste('"status;;server ready\n" >> ', log.path, sep = ""))
+      
+      dir.create(fasta.path)
+      dir.create(faa.path)
+      dir.create(ffn.path)
+      
       Sys.chmod(fasta.path, mode = "0777", use_umask = TRUE)
       Sys.chmod(ffn.path, mode = "0777", use_umask = TRUE)
       Sys.chmod(faa.path, mode = "0777", use_umask = TRUE)
@@ -1460,7 +1460,7 @@ status$dataset <- input$dataset
     }
   })
   
-
+  
   # enable buttons if eden finished and cleanup
   observe({
     if (status$eden_error){
@@ -1524,7 +1524,7 @@ status$dataset <- input$dataset
   
   
   ############ start eden-visualizer ###########
-
+  
   dataset <- reactive({
     if (status$dataset[1] != "") {
       readCsv(paste(csv.path, status$dataset, sep = "/"))
@@ -1561,15 +1561,15 @@ status$dataset <- input$dataset
       data.nonterm <- data[which(data$term != term), ]
       test.mat <-
         matrix(c(
-          round(sum(data.term$sum_pN)),
-          round(sum(data.term$sum_pS)),
-          round(sum(data.nonterm$sum_pN)),
-          round(sum(data.nonterm$sum_pS))
+          round(sum(data.term$sum_Nd)),
+          round(sum(data.term$sum_Sd)),
+          round(sum(data.nonterm$sum_Nd)),
+          round(sum(data.nonterm$sum_Sd))
         ),
         nrow = 2,
         dimnames =
           list(c("background", "selected"),
-               c("dN", "dS")))
+               c("Nd", "Sd")))
       df[i, ]$pval <-
         fisher.test(test.mat, alternative = "greater",  workspace=1e9)$p.value
       df[i, ]$elements <- df[i, ]$elements  + nrow(data.term)
@@ -1609,14 +1609,14 @@ status$dataset <- input$dataset
       data.nonsample <- data[which(data$sample != sample), ]
       test.mat <-
         matrix(c(
-          round(sum(data.sample$sum_pN)),
-          round(sum(data.sample$sum_pS)),
-          round(sum(data.nonsample$sum_pN)),
-          round(sum(data.nonsample$sum_pS))
+          round(sum(data.sample$sum_Nd)),
+          round(sum(data.sample$sum_Sd)),
+          round(sum(data.nonsample$sum_Nd)),
+          round(sum(data.nonsample$sum_Sd))
         ),
         nrow = 2,
         dimnames =
-          list(c("dN", "dS"),
+          list(c("Nd", "Sd"),
                c("selected", "background")))
       df[i, ]$pval <-
         fisher.test(test.mat, alternative = "greater", workspace=1e9)$p.value
@@ -1634,7 +1634,7 @@ status$dataset <- input$dataset
     if(input$dataset != ""){
       DT::datatable(dataset, options = list(pageLength = 25))
     } 
-    )
+  )
   
   # Filter data based on selections
   output$table <- DT::renderDataTable(DT::datatable({
@@ -1688,23 +1688,23 @@ status$dataset <- input$dataset
   
   # render again if input$datase changes
   output$filters_UI <- renderUI({
-if(input$dataset != ""){
-  # if (!no_csv){
-  dataset <- readCsv(paste(csv.path, status$dataset, sep = "/"))
-  
-  
-  selectInput(
-    "samples",
-    "Choose one or more samples:",
-    choices = levels(factor(dataset$sample)),
-    selected = c(levels(factor(
-      dataset()$sample
-    ))[1]),
-    multiple = T,
-    width = "100%"
-  ) 
-
-}
+    if(input$dataset != ""){
+      # if (!no_csv){
+      dataset <- readCsv(paste(csv.path, status$dataset, sep = "/"))
+      
+      
+      selectInput(
+        "samples",
+        "Choose one or more samples:",
+        choices = levels(factor(dataset$sample)),
+        selected = c(levels(factor(
+          dataset()$sample
+        ))[1]),
+        multiple = T,
+        width = "100%"
+      ) 
+      
+    }
     #}
   })
   
@@ -1725,7 +1725,7 @@ if(input$dataset != ""){
         min = 0,
         max = 1,
         value =1)
-  
+      
     }
   })
   
@@ -1740,7 +1740,7 @@ if(input$dataset != ""){
       input.tabset=='start' ||
 input.tabset=='overview' ||
       input.tabset=='categories' ",
-  #    helpText("Select which analysis run you want to show"),
+      #    helpText("Select which analysis run you want to show"),
       selectInput(
         "dataset",
         "Select run:",
@@ -1766,7 +1766,7 @@ input.tabset=='overview' ||
         choices = c("by P value" = "pvalue", "by dN/dS ratio" = "ratio"),
         selected = "no filtering"
       ),
-  uiOutput("dependentselection")
+      uiOutput("dependentselection")
     )
   })
   
@@ -2119,7 +2119,7 @@ input.tabset=='overview' ||
       print(p)
     } 
     
-
+    
   }, height = 400)
   
   
@@ -2137,73 +2137,73 @@ input.tabset=='overview' ||
     renderText({
       if(input$dataset != ""){
         
-              
-      data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
-      data <- data[which(data$fdr <= input$pval), ]
-      data <- data[which(data$sample == input$samples), ]
-      
-      s = input$table_rows_selected
-      if (length(s)) {
-        data.selection <<- data[input$table_rows_selected,]
-    
-       fams <- print(data.selection$name)
-       for(fam in fams){
-         input$sample 
         
-      # move selected families to tmp folder that they can downloaded on button press
-      dnds_path <- paste0(raw.path, "/",input$dataset,"/", input$samples[1] ,"/dnds/",fams,".txt.DnDsRatio.txt")
-      tree_path <- paste0(raw.path, "/",input$dataset,"/", input$samples[1] ,"/tree/",fams,".ffn.txt")
-      codon_path <- paste0(raw.path, "/",input$dataset,"/", input$samples[1] ,"/codon/",fams,".msa")
-      print("copy files")
-      do.call(file.remove, list(list.files(down.path, full.names = TRUE)))
-      file.copy(dnds_path, paste0(down.path, "/", input$dataset,"-", input$samples[1],"-",fams, ".dnds.txt"))
-      file.copy(tree_path, paste0(down.path, "/", input$dataset,"-", input$samples[1],"-",fams, ".tree.phy"))
-      file.copy(codon_path, paste0(down.path, "/", input$dataset,"-", input$samples[1],"-",fams, ".codon.msa"))
-      
-       }
-   
+        data <-  readCsv(paste(csv.path, status$dataset, sep = "/"))
+        data <- data[which(data$fdr <= input$pval), ]
+        data <- data[which(data$sample == input$samples), ]
         
-        dnds_files <- data[input$table_rows_selected,]
-        test.mat <-
-          matrix(c(
-            round(sum(data.selection$sum_pN)),
-            round(sum(data.selection$sum_pS)),
-            round(sum(data$sum_pN)),
-            round(sum(data$sum_pS))
-          ),
-          nrow = 2,
-          dimnames =
-            list(c("dN", "dS"),
-                 c("selected", "background")))
-        
-        pval <- fisher.test(test.mat, alternative = "greater", workspace = 1e9)$p.value
-        ## selected
-        paste(
-          "</br><div class='panel panel-default'>
-          <div class='panel-heading'>Fisher's test</div>
-          <div class='panel-body'>",
-          "mean ratio of selected datasets: <span class='badge'>",
+        s = input$table_rows_selected
+        if (length(s)) {
+          data.selection <<- data[input$table_rows_selected,]
           
-          round(mean(data$ratio, na.rm=TRUE), digits = 3),
-          "+-",
-          round(sd(data$ratio, na.rm=TRUE), digits = 3) ,
-          "(SD) </span></br> compared to  mean ratio of selected families: <span class='badge'>",
-          round(mean(data.selection$ratio, na.rm=TRUE), digits = 3),
-          "+-",
-          round(sd(data.selection$ratio, na.rm=TRUE), digits = 3) ,
-          "(SD) </span></br> p-value (one-sided):  <span class='badge'>", round(pval, digits = 5),"</span>"
-  
-        
-                )
-      } else {
-        
-        paste(
-          "</br><div class='panel panel-default'>
+          fams <- print(data.selection$name)
+          for(fam in fams){
+            input$sample 
+            
+            # move selected families to tmp folder that they can downloaded on button press
+            dnds_path <- paste0(raw.path, "/",input$dataset,"/", input$samples[1] ,"/dnds/",fams,".txt.DnDsRatio.txt")
+            tree_path <- paste0(raw.path, "/",input$dataset,"/", input$samples[1] ,"/tree/",fams,".ffn.txt")
+            codon_path <- paste0(raw.path, "/",input$dataset,"/", input$samples[1] ,"/codon/",fams,".msa")
+            print("copy files")
+            do.call(file.remove, list(list.files(down.path, full.names = TRUE)))
+            file.copy(dnds_path, paste0(down.path, "/", input$dataset,"-", input$samples[1],"-",fams, ".dnds.txt"))
+            file.copy(tree_path, paste0(down.path, "/", input$dataset,"-", input$samples[1],"-",fams, ".tree.phy"))
+            file.copy(codon_path, paste0(down.path, "/", input$dataset,"-", input$samples[1],"-",fams, ".codon.msa"))
+            
+          }
+          
+          
+          dnds_files <- data[input$table_rows_selected,]
+          test.mat <-
+            matrix(c(
+              round(sum(data.selection$sum_Nd)),
+              round(sum(data.selection$sum_Sd)),
+              round(sum(data$sum_Nd)),
+              round(sum(data$sum_Sd))
+            ),
+            nrow = 2,
+            dimnames =
+              list(c("Nd", "Sd"),
+                   c("selected", "background")))
+          
+          pval <- fisher.test(test.mat, alternative = "greater", workspace = 1e9)$p.value
+          ## selected
+          paste(
+            "</br><div class='panel panel-default'>
           <div class='panel-heading'>Fisher's test</div>
           <div class='panel-body'>",
-          "please select rows from the table above to perform a fisher test")
-      }
-      
+            "mean ratio of selected datasets: <span class='badge'>",
+            
+            round(mean(data$ratio, na.rm=TRUE), digits = 3),
+            "+-",
+            round(sd(data$ratio, na.rm=TRUE), digits = 3) ,
+            "(SD) </span></br> compared to  mean ratio of selected families: <span class='badge'>",
+            round(mean(data.selection$ratio, na.rm=TRUE), digits = 3),
+            "+-",
+            round(sd(data.selection$ratio, na.rm=TRUE), digits = 3) ,
+            "(SD) </span></br> p-value (one-sided):  <span class='badge'>", round(pval, digits = 5),"</span>"
+            
+            
+          )
+        } else {
+          
+          paste(
+            "</br><div class='panel panel-default'>
+          <div class='panel-heading'>Fisher's test</div>
+          <div class='panel-body'>",
+            "please select rows from the table above to perform a fisher test")
+        }
+        
       }
       
       
@@ -2298,11 +2298,11 @@ input.tabset=='overview' ||
                       )
     )
     updateSelectInput(session, "samples")
-
+    
   })
   
   
-
+  
   
   #################
   # RENDER html
@@ -2332,30 +2332,30 @@ input.tabset=='overview' ||
         color = "green"
       )
     }
-  
+    
   })
   
-#  observe({
-#    observeEvent(status$eden_error ,{
-#      if(length(list.files(tar.path)) == 0) return(NULL)
-#      hide(id = "figurebox", anim = TRUE)
-#    })
-    
-#  })
+  #  observe({
+  #    observeEvent(status$eden_error ,{
+  #      if(length(list.files(tar.path)) == 0) return(NULL)
+  #      hide(id = "figurebox", anim = TRUE)
+  #    })
+  
+  #  })
   
   
-
+  
   observe({
     if (status$newfiles){
       #showModal(modalDialog(
       #  title = "Preparing the viewer for new samples!","loading...",
       #  loadtar(),
       
-        # automatically imported here
-    #    actionButton('reloadButton2', label = "import files"), 
-    #   easyClose = TRUE,
-    #    footer = NULL
-    #  ))
+      # automatically imported here
+      #    actionButton('reloadButton2', label = "import files"), 
+      #   easyClose = TRUE,
+      #    footer = NULL
+      #  ))
       Sys.sleep(1) # make sure the tar file is loading complete by waiting
       withProgress(message = 'Extract files, please wait', value = 0, {
         extractTar(tar.path, raw.path, csv.path, progress=TRUE)
@@ -2373,8 +2373,8 @@ input.tabset=='overview' ||
       updateSelectInput(session, "samples")
       
     }
-    })
- 
+  })
+  
   output$reloadstatus <-
     renderText({
       if (status$newfiles){
@@ -2467,29 +2467,29 @@ input.tabset=='overview' ||
     })
   
   output$overview_table <-
-   
-          
+    
+    
     renderText({
       if (input$dataset != ""){
-      paste(
-        "</br><div class='panel panel-default'>
+        paste(
+          "</br><div class='panel panel-default'>
         <div class='panel-heading'>Table description</div>
         <div class='panel-body'>",
-        "<span class='badge'>",
-        num.name,
-        "</span> protein families found in <span class='badge'>",
-        length(input$samples),
-        "</span> samples with a mean dN/dS ratio of <span class='badge'>",
-        num.meanratio,
-        " +- ",
-        num.sd,
-        "(SD) </span>. Categories based on HMM match with E-value 0.01. Only protein families with a FDR adjusted p-value of less than ",
-        input$pval,
-        " are shown. p-value(s) as: one star for value below 0.05, two for 0.01 and three for 0.001. Table generated with eden <span class='label label-default'>v. 0.1.0</span>",
-        "</div></div>"
-      )
+          "<span class='badge'>",
+          num.name,
+          "</span> protein families found in <span class='badge'>",
+          length(input$samples),
+          "</span> samples with a mean dN/dS ratio of <span class='badge'>",
+          num.meanratio,
+          " +- ",
+          num.sd,
+          "(SD) </span>. Categories based on HMM match with E-value 0.01. Only protein families with a FDR adjusted p-value of less than ",
+          input$pval,
+          " are shown. p-value(s) as: one star for value below 0.05, two for 0.01 and three for 0.001. Table generated with eden <span class='label label-default'>v. 0.1.0</span>",
+          "</div></div>"
+        )
       } 
- 
+      
     })
   
   
@@ -2526,7 +2526,7 @@ input.tabset=='overview' ||
         )
         
       }
-     
+      
     })
   
   # tab 3
@@ -2541,7 +2541,7 @@ input.tabset=='overview' ||
                </div>")
       }
       
-      })
+    })
   # overview  tab
   output$alignment_figure <-
     renderText({
@@ -2589,10 +2589,10 @@ input.tabset=='overview' ||
     filename = function() {
       paste("data-", Sys.Date(), ".zip", sep="")
     },
-   content <- function(file) {
-     files2zip <- dir(down.path, full.names = TRUE)
-     zip(zipfile = 'out', files = files2zip)
-    file.copy("out.zip", file)
+    content <- function(file) {
+      files2zip <- dir(down.path, full.names = TRUE)
+      zip(zipfile = 'out', files = files2zip)
+      file.copy("out.zip", file)
     },
     contentType = "application/zip"
   )
@@ -2663,4 +2663,4 @@ input.tabset=='overview' ||
   
   ############ end eden-visualizer #############
   
-  })
+})

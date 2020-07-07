@@ -37,6 +37,10 @@ Source: CRAN
 Version: 0.12.10
 Hash: 6cf65d0dd6a92f2d43c8d4805d33efe9
 
+Package: ade4
+Source: CRAN
+Version: 1.7-6
+
 Package: bitops
 Source: CRAN
 Version: 1.0-6
@@ -174,6 +178,15 @@ Source: CRAN
 Version: 0.4.1
 Hash: 2d008b6e3fb9938255669ddf3c85f1f3
 Requires: RColorBrewer, Rcpp, dichromat, labeling, munsell, plyr
+
+Package: segmented
+Source: CRAN
+Version: 0.5-2.1
+
+Package: seqinr
+Source: CRAN
+Version: 3.3-6
+Requires: ade4, segmented
 
 Package: shiny
 Source: CRAN
